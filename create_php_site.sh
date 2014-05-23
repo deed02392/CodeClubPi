@@ -47,7 +47,7 @@ CONFIG=$NGINX_CONFIG/$DOMAIN.conf
 cp $NGINX_VHOST_TEMPLATE $CONFIG
 $SED -i "s/@@HOSTNAME@@/$DOMAIN/g" $CONFIG
 $SED -i "s#@@PATH@@#"$HOME_DIR$PUBLIC_HTML_DIR"#g" $CONFIG
-$SED -i "s/@@LOG_PATH@@/$HOME_DIR\/_logs/g" $CONFIG
+$SED -i "s#@@LOG_PATH@@#"$HOME_DIR\/_logs"#g" $CONFIG
 chmod 644 $CONFIG
 
 # Set file perms and create required directories
