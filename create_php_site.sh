@@ -12,6 +12,8 @@ NGINX_INIT='/etc/init.d/nginx'
 
 SED=`which sed`
 CURRENT_DIR=`dirname $0`
+NGINX_VHOST_TEMPLATE=$CURRENT_DIR/nginx.vhost.conf.template
+PUBLIC_HTML_DIR='/public_html'
 
 if [ -z $1 ]; then
     echo "No domain name given"
@@ -32,25 +34,23 @@ fi
 # Create a new user
 echo "Please specify the username for this site?"
 read USERNAME
-HOME_DIR=$USERNAME
+HOME_DIR=/home/$USERNAME
 
-mkdir --mode=755 /home/$USERNAME
-useradd -d /home/$USERNAME -M -N -g sftp-only -G $WEB_SERVER_GROUP -s /usr/sbin/nologin $USERNAME
-chown root:root /home/$USERNAME
-
-PUBLIC_HTML_DIR='/public_html'
+mkdir --mode=755 $HOME_DIR
+useradd -d $HOME_DIR -M -N -g sftp-only -G $WEB_SERVER_GROUP -s /usr/sbin/nologin $USERNAME
+chown root:root $HOME_DIR
 
 # Copy the virtual host template
 CONFIG=$NGINX_CONFIG/$DOMAIN.conf
-cp $CURRENT_DIR/nginx.vhost.conf.template $CONFIG
+cp $NGINX_VHOST_TEMPLATE $CONFIG
 $SED -i "s/@@HOSTNAME@@/$DOMAIN/g" $CONFIG
-$SED -i "s#@@PATH@@#\/home\/"$USERNAME$PUBLIC_HTML_DIR"#g" $CONFIG
-$SED -i "s/@@LOG_PATH@@/\/home\/$USERNAME\/_logs/g" $CONFIG
+$SED -i "s#@@PATH@@#"$HOME_DIR$PUBLIC_HTML_DIR"#g" $CONFIG
+$SED -i "s/@@LOG_PATH@@/$HOME_DIR\/_logs/g" $CONFIG
 chmod 644 $CONFIG
 
 # Set file perms and create required directories
-mkdir --mode=750 /home/$HOME_DIR$PUBLIC_HTML_DIR
-mkdir --mode=770 /home/$HOME_DIR/_logs
+mkdir --mode=750 $HOME_DIR$PUBLIC_HTML_DIR
+mkdir --mode=770 $HOME_DIR/_logs
 
 # Enable the domain in nginx
 ln -s $CONFIG $NGINX_SITES_ENABLED/$DOMAIN.conf
