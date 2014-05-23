@@ -4,6 +4,7 @@ server {
 
     index index.htm index.html;
     client_max_body_size 1m;
+    autoindex on;
 
     access_log @@LOG_PATH@@/access.log;
     error_log @@LOG_PATH@@/error.log;
