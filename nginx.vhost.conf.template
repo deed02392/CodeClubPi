@@ -8,10 +8,6 @@ server {
     access_log @@LOG_PATH@@/access.log;
     error_log @@LOG_PATH@@/error.log;
     
-    location / {
-        try_files $uri $uri/;
-    }
-    
     location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ {
         expires max;
         log_not_found off;
