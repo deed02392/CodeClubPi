@@ -34,10 +34,9 @@ echo "Please specify the username for this site?"
 read USERNAME
 HOME_DIR=$USERNAME
 
-mkdir /home/$USERNAME
+mkdir --mode=755 /home/$USERNAME
 useradd -d /home/$USERNAME -M -N -g sftp-only -G $WEB_SERVER_GROUP -s /usr/sbin/nologin $USERNAME
 chown root:root /home/$USERNAME
-chmod 755 /home/$USERNAME
 
 PUBLIC_HTML_DIR='/public_html'
 
@@ -47,22 +46,14 @@ cp $CURRENT_DIR/nginx.vhost.conf.template $CONFIG
 $SED -i "s/@@HOSTNAME@@/$DOMAIN/g" $CONFIG
 $SED -i "s#@@PATH@@#\/home\/"$USERNAME$PUBLIC_HTML_DIR"#g" $CONFIG
 $SED -i "s/@@LOG_PATH@@/\/home\/$USERNAME\/_logs/g" $CONFIG
+chmod 644 $CONFIG
 
-chmod g+rx /home/$HOME_DIR
-chmod 600 $CONFIG
+# Set file perms and create required directories
+mkdir --mode=750 /home/$HOME_DIR$PUBLIC_HTML_DIR
+mkdir --mode=770 /home/$HOME_DIR/_logs
 
+# Enable the domain in nginx
 ln -s $CONFIG $NGINX_SITES_ENABLED/$DOMAIN.conf
-
-# set file perms and create required dirs!
-mkdir -p /home/$HOME_DIR$PUBLIC_HTML_DIR
-mkdir /home/$HOME_DIR/_logs
-mkdir /home/$HOME_DIR/_sessions
-chmod 750 /home/$HOME_DIR -R
-chmod 700 /home/$HOME_DIR/_sessions
-chmod 770 /home/$HOME_DIR/_logs
-chmod 750 /home/$HOME_DIR$PUBLIC_HTML_DIR
-chown $USERNAME:$USERNAME /home/$HOME_DIR/ -R
-
 $NGINX_INIT reload
 
-echo -e "\nSite Created for $DOMAIN"
+echo "Site created for:" $DOMAIN
