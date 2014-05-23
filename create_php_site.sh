@@ -14,6 +14,7 @@ SED=`which sed`
 CURRENT_DIR=`dirname $0`
 NGINX_VHOST_TEMPLATE=$CURRENT_DIR/nginx.vhost.conf.template
 PUBLIC_HTML_DIR='/public_html'
+RESTRICTED_GROUP='sftp-only'
 
 if [ -z $1 ]; then
     echo "No domain name given"
@@ -37,7 +38,8 @@ read USERNAME
 HOME_DIR=/home/$USERNAME
 
 mkdir --mode=755 $HOME_DIR
-useradd -d $HOME_DIR -M -N -g sftp-only -G $WEB_SERVER_GROUP -s /usr/sbin/nologin $USERNAME
+groupadd -f $RESTRICTED_GROUP
+useradd -d $HOME_DIR -M -N -g $RESTRICTED_GROUP -G $WEB_SERVER_GROUP -s /usr/sbin/nologin $USERNAME
 chown root:root $HOME_DIR
 
 # Copy the virtual host template
