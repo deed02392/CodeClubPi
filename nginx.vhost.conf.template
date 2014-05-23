@@ -1,29 +1,25 @@
 server {
-  server_name @@HOSTNAME@@;
-  root "@@PATH@@";
+    server_name @@HOSTNAME@@;
+    root "@@PATH@@";
 
-  index index.htm index.html;
-  client_max_body_size 1m;
+    index index.htm index.html;
+    client_max_body_size 1m;
 
-	access_log @@LOG_PATH@@/access.log;
-	error_log @@LOG_PATH@@/error.log;
-	
-	location / {
-			try_files $uri $uri/;
-	}
-	
-
+    access_log @@LOG_PATH@@/access.log;
+    error_log @@LOG_PATH@@/error.log;
+    
+    location / {
+        try_files $uri $uri/;
     }
-
-
-	location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ {
-			expires max;
-			log_not_found off;
-			access_log off;
-	}
-	
-	location ~* \.(html|htm)$ {
-		expires 0;
-                add_header Cache-Control private;
-	}
+    
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ {
+        expires max;
+        log_not_found off;
+        access_log off;
+    }
+    
+    location ~* \.(html|htm)$ {
+        expires 0;
+        add_header Cache-Control private;
+    }
 }

@@ -8,24 +8,25 @@ NGINX_CONFIG='/etc/nginx/sites-available'
 NGINX_SITES_ENABLED='/etc/nginx/sites-enabled'
 WEB_SERVER_GROUP='www-data'
 NGINX_INIT='/etc/init.d/nginx'
-# --------------END 
+# --------------END
+
 SED=`which sed`
 CURRENT_DIR=`dirname $0`
 
 if [ -z $1 ]; then
-	echo "No domain name given"
-	exit 1
+    echo "No domain name given"
+    exit 1
 fi
 DOMAIN=$1
 
 # check the domain is valid!
 PATTERN="^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$";
 if [[ "$DOMAIN" =~ $PATTERN ]]; then
-	DOMAIN=`echo $DOMAIN | tr '[A-Z]' '[a-z]'`
-	echo "Creating hosting for:" $DOMAIN
+    DOMAIN=`echo $DOMAIN | tr '[A-Z]' '[a-z]'`
+    echo "Creating hosting for:" $DOMAIN
 else
-	echo "invalid domain name"
-	exit 1 
+    echo "invalid domain name"
+    exit 1 
 fi
 
 # Create a new user!
@@ -37,11 +38,11 @@ adduser $USERNAME
 echo "Would you like to change to web root directory (y/n)?"
 read CHANGEROOT
 if [ $CHANGEROOT == "y" ]; then
-	echo "Enter the new web root dir (after the public_html/)"
-	read DIR
-	PUBLIC_HTML_DIR='/public_html/'$DIR
+    echo "Enter the new web root dir (after the public_html/)"
+    read DIR
+    PUBLIC_HTML_DIR='/public_html/'$DIR
 else
-	PUBLIC_HTML_DIR='/public_html'
+    PUBLIC_HTML_DIR='/public_html'
 fi
 
 # Now we need to copy the virtual host template
