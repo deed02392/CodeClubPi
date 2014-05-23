@@ -13,6 +13,7 @@ NGINX_INIT='/etc/init.d/nginx'
 SED=`which sed`
 CURRENT_DIR=`dirname $0`
 NGINX_VHOST_TEMPLATE=$CURRENT_DIR/nginx.vhost.conf.template
+DEFAULT_INDEX=$CURRENT_DIR/index.htm.template
 PUBLIC_HTML_DIR='/public_html'
 RESTRICTED_GROUP='sftp-only'
 
@@ -49,6 +50,11 @@ $SED -i "s/@@HOSTNAME@@/$DOMAIN/g" $CONFIG
 $SED -i "s#@@PATH@@#"$HOME_DIR$PUBLIC_HTML_DIR"#g" $CONFIG
 $SED -i "s#@@LOG_PATH@@#"$HOME_DIR\/_logs"#g" $CONFIG
 chmod 644 $CONFIG
+
+# And the default home page
+INDEX=$HOME_DIR$PUBLIC_HTML_DIR/index.htm
+cp $DEFAULT_INDEX $INDEX
+$SED -i "s#@@USERNAME@@#"$USERNAME"#g" $INDEX
 
 # Set file perms and create required directories
 mkdir --mode=750 $HOME_DIR$PUBLIC_HTML_DIR
