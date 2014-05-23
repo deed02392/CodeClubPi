@@ -53,6 +53,7 @@ chmod 644 $CONFIG
 # Set file perms and create required directories
 mkdir --mode=750 $HOME_DIR$PUBLIC_HTML_DIR
 mkdir --mode=770 $HOME_DIR/_logs
+chown -R $USERNAME:$WEB_SERVER_GROUP $HOME_DIR/*
 
 # Enable the domain in nginx
 ln -s $CONFIG $NGINX_SITES_ENABLED/$DOMAIN.conf
