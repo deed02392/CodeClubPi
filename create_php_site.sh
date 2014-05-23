@@ -35,15 +35,7 @@ read USERNAME
 HOME_DIR=$USERNAME
 adduser $USERNAME
 
-echo "Would you like to change to web root directory (y/n)?"
-read CHANGEROOT
-if [ $CHANGEROOT == "y" ]; then
-    echo "Enter the new web root dir (after the public_html/)"
-    read DIR
-    PUBLIC_HTML_DIR='/public_html/'$DIR
-else
-    PUBLIC_HTML_DIR='/public_html'
-fi
+PUBLIC_HTML_DIR='/public_html'
 
 # Now we need to copy the virtual host template
 CONFIG=$NGINX_CONFIG/$DOMAIN.conf
