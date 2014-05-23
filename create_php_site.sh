@@ -51,7 +51,6 @@ cp $CURRENT_DIR/nginx.vhost.conf.template $CONFIG
 $SED -i "s/@@HOSTNAME@@/$DOMAIN/g" $CONFIG
 $SED -i "s#@@PATH@@#\/home\/"$USERNAME$PUBLIC_HTML_DIR"#g" $CONFIG
 $SED -i "s/@@LOG_PATH@@/\/home\/$USERNAME\/_logs/g" $CONFIG
-$SED -i "s#@@SOCKET@@#/var/run/"$USERNAME"_fpm.sock#g" $CONFIG
 
 usermod -aG $USERNAME $WEB_SERVER_GROUP
 chmod g+rx /home/$HOME_DIR
@@ -72,4 +71,3 @@ chown $USERNAME:$USERNAME /home/$HOME_DIR/ -R
 $NGINX_INIT reload
 
 echo -e "\nSite Created for $DOMAIN"
-
