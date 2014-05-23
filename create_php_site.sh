@@ -19,7 +19,7 @@ if [ -z $1 ]; then
 fi
 DOMAIN=$1
 
-# check the domain is valid!
+# Check the domain is valid
 PATTERN="^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$";
 if [[ "$DOMAIN" =~ $PATTERN ]]; then
     DOMAIN=`echo $DOMAIN | tr '[A-Z]' '[a-z]'`
@@ -29,7 +29,7 @@ else
     exit 1 
 fi
 
-# Create a new user!
+# Create a new user
 echo "Please specify the username for this site?"
 read USERNAME
 HOME_DIR=$USERNAME
@@ -40,7 +40,7 @@ chown root:root /home/$USERNAME
 
 PUBLIC_HTML_DIR='/public_html'
 
-# Now we need to copy the virtual host template
+# Copy the virtual host template
 CONFIG=$NGINX_CONFIG/$DOMAIN.conf
 cp $CURRENT_DIR/nginx.vhost.conf.template $CONFIG
 $SED -i "s/@@HOSTNAME@@/$DOMAIN/g" $CONFIG
