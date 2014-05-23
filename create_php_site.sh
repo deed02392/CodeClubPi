@@ -35,7 +35,7 @@ read USERNAME
 HOME_DIR=$USERNAME
 
 mkdir /home/$USERNAME
-useradd -d /home/$USERNAME -M -N -g sftp-only -s /usr/sbin/nologin $USERNAME
+useradd -d /home/$USERNAME -M -N -g sftp-only -G $WEB_SERVER_GROUP -s /usr/sbin/nologin $USERNAME
 chown root:root /home/$USERNAME
 chmod 755 /home/$USERNAME
 
@@ -48,7 +48,6 @@ $SED -i "s/@@HOSTNAME@@/$DOMAIN/g" $CONFIG
 $SED -i "s#@@PATH@@#\/home\/"$USERNAME$PUBLIC_HTML_DIR"#g" $CONFIG
 $SED -i "s/@@LOG_PATH@@/\/home\/$USERNAME\/_logs/g" $CONFIG
 
-usermod -aG $USERNAME $WEB_SERVER_GROUP
 chmod g+rx /home/$HOME_DIR
 chmod 600 $CONFIG
 
