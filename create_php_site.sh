@@ -18,10 +18,11 @@ PUBLIC_HTML_DIR='/public_html'
 RESTRICTED_GROUP='sftp-only'
 
 if [ -z $1 ]; then
-    echo "No domain name given"
+    echo "No new name given"
     exit 1
 fi
-DOMAIN=$1
+USERNAME=$1
+DOMAIN=$USERNAME".code.club"
 
 # Check the domain is valid
 PATTERN="^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$";
@@ -29,13 +30,11 @@ if [[ "$DOMAIN" =~ $PATTERN ]]; then
     DOMAIN=`echo $DOMAIN | tr '[A-Z]' '[a-z]'`
     echo "Creating hosting for:" $DOMAIN
 else
-    echo "invalid domain name"
+    echo "Invalid domain name"
     exit 1 
 fi
 
 # Create a new user
-echo "Please specify the username for this site?"
-read USERNAME
 HOME_DIR=/home/$USERNAME
 
 mkdir --mode=755 $HOME_DIR
