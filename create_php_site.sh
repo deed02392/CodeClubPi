@@ -33,7 +33,11 @@ fi
 echo "Please specify the username for this site?"
 read USERNAME
 HOME_DIR=$USERNAME
-adduser $USERNAME
+
+mkdir /home/$USERNAME
+useradd -d /home/$USERNAME -M -N -g sftp-only -s /usr/sbin/nologin $USERNAME
+chown root:root /home/$USERNAME
+chmod 755 /home/$USERNAME
 
 PUBLIC_HTML_DIR='/public_html'
 
