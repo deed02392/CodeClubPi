@@ -41,6 +41,7 @@ HOME_DIR=/home/$USERNAME
 mkdir --mode=755 $HOME_DIR
 groupadd -f $RESTRICTED_GROUP
 useradd -d $HOME_DIR -M -N -g $RESTRICTED_GROUP -G $WEB_SERVER_GROUP -s /usr/sbin/nologin $USERNAME
+echo $USERNAME:$USERNAME | chpasswd
 chown root:root $HOME_DIR
 
 # Copy the virtual host template
@@ -60,7 +61,6 @@ cp $DEFAULT_INDEX $INDEX
 $SED -i "s#@@USERNAME@@#"$USERNAME"#g" $INDEX
 
 chown -R $USERNAME:$WEB_SERVER_GROUP $HOME_DIR/*
-
 
 # Enable the domain in nginx
 ln -s $CONFIG $NGINX_SITES_ENABLED/$DOMAIN.conf
