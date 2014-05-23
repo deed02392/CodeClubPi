@@ -51,15 +51,16 @@ $SED -i "s#@@PATH@@#"$HOME_DIR$PUBLIC_HTML_DIR"#g" $CONFIG
 $SED -i "s#@@LOG_PATH@@#"$HOME_DIR\/_logs"#g" $CONFIG
 chmod 644 $CONFIG
 
-# And the default home page
+# Set file perms and create required directories
+mkdir --mode=750 $HOME_DIR$PUBLIC_HTML_DIR
+mkdir --mode=770 $HOME_DIR/_logs
+
 INDEX=$HOME_DIR$PUBLIC_HTML_DIR/index.htm
 cp $DEFAULT_INDEX $INDEX
 $SED -i "s#@@USERNAME@@#"$USERNAME"#g" $INDEX
 
-# Set file perms and create required directories
-mkdir --mode=750 $HOME_DIR$PUBLIC_HTML_DIR
-mkdir --mode=770 $HOME_DIR/_logs
 chown -R $USERNAME:$WEB_SERVER_GROUP $HOME_DIR/*
+
 
 # Enable the domain in nginx
 ln -s $CONFIG $NGINX_SITES_ENABLED/$DOMAIN.conf
