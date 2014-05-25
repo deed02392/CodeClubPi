@@ -39,7 +39,7 @@ HOME_DIR=/home/$USERNAME
 
 mkdir --mode=755 $HOME_DIR
 groupadd -f $RESTRICTED_GROUP
-useradd -d $HOME_DIR -M -N -g $RESTRICTED_GROUP -G $WEB_SERVER_GROUP -s /usr/sbin/nologin $USERNAME
+useradd -d $HOME_DIR -M -N -g $RESTRICTED_GROUP -G $WEB_SERVER_GROUP -s /usr/sbin/nologin -c "Code Club student" $USERNAME
 echo $USERNAME:$USERNAME | chpasswd
 chown root:root $HOME_DIR
 
