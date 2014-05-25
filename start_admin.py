@@ -11,8 +11,6 @@ from tornado import escape
 from pprint import pprint
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
-conn = None
-c = None
 template_dir = "templates"
 template_file = "admin.htm.template"
 
