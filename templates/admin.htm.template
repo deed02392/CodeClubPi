@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head><title>Admin :: Code Club Web Server</title></head>
+<body>
+	<h1>Manage Students</h1>
+	<table border=1>
+		<thead>
+			<tr>
+				<td>Full Name</td>
+				<td>Username</td>
+				<td>Password</td>
+				<td>URL</td>
+				<td>Indexed?</td>
+				<td>Del</td>
+			</tr>
+		</thead>
+		<tbody>
+		{% for student in students %}
+		{% block student %}
+			<tr>
+				<td>{{ escape(student['fullname']) }}</td>
+				<td>{{ escape(student['username']) }}</td>
+				<td>{{ escape(student['password']) }}</td>
+				<td><a href="{{ escape(student['url']) }}">{{ escape(student['url']) }}</a></td>
+				<td>{{ student['isindexed'] }}</td>
+				<td><a href="{{ escape(student['deletelink']) }}">Del</a></td>
+			</tr>
+		{% end %}
+		{% end %}
+		</tbody>
+		<tfoot>
+			<tr>
+				<form action="" method="post" name="add-student">
+					<td><input type="text" name="fullname" placeholder="Full name" /></td>
+					<td><input type="text" name="username" placeholder="Username" /></td>
+					<td><input type="text" name="password" placeholder="Password" /></td>
+					<td><input type="text" name="url" placeholder="URL" /></td>
+					<td><input type="checkbox" name="indexed" checked="checked" /></td>
+					<td><input type="submit" name="submit" value="Add" /></td>
+				</form>
+			</tr>
+		</tfoot>
+	</table>
+</body>
+</html>
