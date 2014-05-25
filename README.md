@@ -6,3 +6,8 @@ http://www.sebdangerfield.me.uk/2012/05/nginx-and-php-fpm-bash-script-for-creati
 Edited for Meon Jr School Code Club, and Code Club volunteers world-wide.
 
 Sorry, PHP support is removed. Bare in mind security implications of setting this up - you need chroot at a minimum.
+
+Usage
+-----
+
+`sudo python start_admin.py` - the Python web server must be run as root to enable permissions necessary for user creation
