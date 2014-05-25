@@ -7,6 +7,7 @@ import tornado.ioloop
 import tornado.template
 import sqlite3
 import random
+import subprocess
 from tornado import escape
 from pprint import pprint
 
@@ -45,6 +46,23 @@ class Utils:
         number = ord(struct.unpack("<c", os.urandom(1))[0])
         return random.choice(fruits) + random.choice(zoo_animals) + str(number)
         
+    @staticmethod
+    def CreateSite(fullname, username, password, url, indexed):
+        proc = subprocess.Popen([current_dir + "/create_site.sh", fullname, username, password, url], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdoutdata, stderrdata = proc.communicate()
+        if proc.returncode == 0:
+            return 0
+        else:
+            return stdoutdata, stderrdata
+
+    @staticmethod
+    def RemoveSite(username):
+        proc = subprocess.Popen([current_dir + "/remove_site.sh", username], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdoutdata, stderrdata = proc.communicate()
+        if proc.returncode == 0:
+            return 0
+        else:
+            return stdoutdata, stderrdata
 
 class AdminHandler(tornado.web.RequestHandler):
     def get(self):
@@ -69,9 +87,9 @@ class AdminHandler(tornado.web.RequestHandler):
         password = self.get_argument('password')
         url = escape.xhtml_escape(self.get_argument('url'))
         try:
-            indexed = True if self.get_argument('indexed') == "on" else False
+            indexed = 1 if self.get_argument('indexed') == "on" else 0
         except tornado.web.MissingArgumentError:
-            indexed = False
+            indexed = 0
         
         if not fullname:
             self.write("Full Name must be specified")
@@ -88,10 +106,36 @@ class AdminHandler(tornado.web.RequestHandler):
         if not password:
             password = Utils.CreatePassword()
         if not url:
-            url = username + ".code.club"
+            url = username
         
-        self.write( "%s %s %s %s %r" % (fullname, username, password, url, indexed))
+        c = db.query("SELECT username FROM students WHERE username=?", [username])
+        result = c.fetchone()
         
+        if result:
+            self.write("This username already exists (%s). Specify the username if two people in your class have the same full name." % username)
+            return
+        
+        create_site = Utils.CreateSite(fullname, username, password, url, indexed)
+        if create_site != 0:
+            self.write("<pre>%s %s %s %s %r\n" % (fullname, username, password, url, indexed))
+            self.write("stdout: %s\nstderr: %s" % (create_site[0], create_site[1]))
+            return
+        
+        db.query('''INSERT INTO students (fullname, username, password, url, indexed)
+            VALUES (?, ?, ?, ?, ?)''', [fullname, username, password, 'http://' + url + '.code.club', indexed])
+        self.redirect("/admin.htm")
+
+class DelHandler(tornado.web.RequestHandler):
+    def get(self, username):
+        delete_site = Utils.RemoveSite(username)
+        if delete_site != 0:
+            self.write("<pre>%s\n" % (username))
+            self.write("stdout: %s\nstderr: %s" % (delete_site[0], delete_site[1]))
+            return
+
+        db.query('''DELETE FROM students WHERE username=?''', [username])
+        self.redirect("/admin.htm")
+
 
 class IndexHandler(tornado.web.RequestHandler):
     def get(self):
@@ -100,6 +144,7 @@ class IndexHandler(tornado.web.RequestHandler):
 application = tornado.web.Application([
     (r"/", IndexHandler),
     (r"/admin.htm", AdminHandler),
+    (r"/del/([a-z]+)", DelHandler),
 ], debug=True)
 
 class DatabaseHandler(object):
@@ -107,8 +152,8 @@ class DatabaseHandler(object):
         self.conn = sqlite3.connect(db)
         self.cur = self.conn.cursor()
 
-    def query(self, arg):
-        self.cur.execute(arg)
+    def query(self, arg, tuple=()):
+        self.cur.execute(arg, tuple)
         self.conn.commit()
         return self.cur
 

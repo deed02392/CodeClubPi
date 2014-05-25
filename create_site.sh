@@ -17,13 +17,10 @@ DEFAULT_INDEX=$CURRENT_DIR/index.htm.template
 PUBLIC_HTML_DIR='/public_html'
 RESTRICTED_GROUP='sftp-only'
 
-if [ -z $1 ]; then
-    echo "No new name given"
-    exit 1
-fi
-USERNAME=$1
-PASSWORD=$2
-DOMAIN=$3".code.club"
+FULLNAME=$1
+USERNAME=$2
+PASSWORD=$3
+DOMAIN=$4".code.club"
 
 
 # Check the domain is valid
@@ -42,6 +39,9 @@ HOME_DIR=/home/$USERNAME
 mkdir --mode=755 $HOME_DIR
 groupadd -f $RESTRICTED_GROUP
 useradd -d $HOME_DIR -M -N -g $RESTRICTED_GROUP -G $WEB_SERVER_GROUP -s /usr/sbin/nologin -c "Code Club student" $USERNAME
+if [ $? -ne 0 ]; then
+    exit 1
+fi
 echo $USERNAME:$PASSWORD | chpasswd
 chown root:root $HOME_DIR
 
@@ -68,3 +68,4 @@ ln -s $CONFIG $NGINX_SITES_ENABLED/$DOMAIN.conf
 $NGINX_INIT reload
 
 echo "Site created for:" $DOMAIN
+exit 0
