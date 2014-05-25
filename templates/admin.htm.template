@@ -16,16 +16,14 @@
 		</thead>
 		<tbody>
 		{% for student in students %}
-		{% block student %}
 			<tr>
 				<td>{{ escape(student['fullname']) }}</td>
 				<td>{{ escape(student['username']) }}</td>
 				<td>{{ escape(student['password']) }}</td>
 				<td><a href="{{ escape(student['url']) }}">{{ escape(student['url']) }}</a></td>
-				<td>{{ student['isindexed'] }}</td>
+				<td><input type="checkbox" {% if student['isindexed'] == 1 %}checked="checked"{% end %} disabled="disabled" /></td>
 				<td><a href="{{ escape(student['deletelink']) }}">Del</a></td>
 			</tr>
-		{% end %}
 		{% end %}
 		</tbody>
 		<tfoot>
