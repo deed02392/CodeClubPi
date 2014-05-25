@@ -22,7 +22,9 @@ if [ -z $1 ]; then
     exit 1
 fi
 USERNAME=$1
-DOMAIN=$USERNAME".code.club"
+PASSWORD=$2
+DOMAIN=$3".code.club"
+
 
 # Check the domain is valid
 PATTERN="^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$";
@@ -40,7 +42,7 @@ HOME_DIR=/home/$USERNAME
 mkdir --mode=755 $HOME_DIR
 groupadd -f $RESTRICTED_GROUP
 useradd -d $HOME_DIR -M -N -g $RESTRICTED_GROUP -G $WEB_SERVER_GROUP -s /usr/sbin/nologin -c "Code Club student" $USERNAME
-echo $USERNAME:$USERNAME | chpasswd
+echo $USERNAME:$PASSWORD | chpasswd
 chown root:root $HOME_DIR
 
 # Copy the virtual host template
