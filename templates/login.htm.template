@@ -1,0 +1,13 @@
+<html>
+<head><title>Login</title></head>
+<body>
+    <table>
+        <tr>
+            <form action="" method="post" name="login">
+                <td><input type="password" name="password" placeholder="Password" /></td>
+                <td><input type="submit" name="submit" value="Login" /></td>
+            </form>
+        </tr>
+    </table>
+</body>
+</html>

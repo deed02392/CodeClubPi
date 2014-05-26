@@ -3,6 +3,7 @@ import os
 import re
 import struct
 import pwd
+import binascii
 import tornado.web
 import tornado.ioloop
 import tornado.template
@@ -150,8 +151,26 @@ class Users:
                 'gecos': u[4],
             })
         return users
+
+class LoginHandler(tornado.web.RequestHandler):
+    def get(self):
+        template_loader = tornado.template.Loader(current_dir + "/" + template_dir)
+        output_html = template_loader.load("login.htm.template").generate()
+        self.write(output_html)
+        return
+    
+    def post(self):
+        password = escape.xhtml_escape(self.get_argument('password'))
+        if password == "zomg123":
+            self.set_secure_cookie("logged_in", "admin")
         
+        self.redirect(self.get_argument('next'))
+    
 class AdminHandler(tornado.web.RequestHandler):
+    def get_current_user(self):
+        return self.get_secure_cookie("logged_in")
+    
+    @tornado.web.authenticated
     def get(self):
         users = Users()
         students = users.get_students()
@@ -161,6 +180,7 @@ class AdminHandler(tornado.web.RequestHandler):
         self.write(output_html)
         return
     
+    @tornado.web.authenticated
     def post(self):
         users = Users()
         fullname = escape.xhtml_escape(self.get_argument('fullname'))
@@ -203,6 +223,10 @@ class AdminHandler(tornado.web.RequestHandler):
         self.redirect("/admin.htm")
 
 class DelHandler(tornado.web.RequestHandler):
+    def get_current_user(self):
+        return self.get_secure_cookie("logged_in")
+
+    @tornado.web.authenticated
     def get(self, username):
         users = Users()
         
@@ -235,8 +259,9 @@ class IndexHandler(tornado.web.RequestHandler):
 application = tornado.web.Application([
     (r"/admin.htm", AdminHandler),
     (r"/del/([a-z]+)", DelHandler),
+    (r"/login.htm", LoginHandler),
     (r"/(.*)", IndexHandler),
-], debug=True)
+], debug=True, login_url="/login.htm", cookie_secret=binascii.hexlify(os.urandom(32)))
 
 class DatabaseHandler(object):
     def __init__(self, db):
