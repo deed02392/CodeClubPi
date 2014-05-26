@@ -277,7 +277,7 @@ class DatabaseHandler(object):
         self.conn.close()
 
 if __name__ == "__main__":
-    application.listen(8080)
+    application.listen(8080, "127.0.0.1")
     db = DatabaseHandler(current_dir + "/" + db_file)
     db.query(("CREATE TABLE IF NOT EXISTS students "
             "(fullname TEXT, username TEXT UNIQUE, password TEXT, url TEXT, indexed INT)"))
