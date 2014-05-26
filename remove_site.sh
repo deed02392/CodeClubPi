@@ -34,3 +34,4 @@ rm $NGINX_SITES_ENABLED/$DOMAIN.conf $NGINX_CONFIG/$DOMAIN.conf
 $NGINX_INIT reload
 
 echo "Site removed:" $DOMAIN
+sleep 10

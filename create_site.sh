@@ -68,4 +68,5 @@ ln -s $CONFIG $NGINX_SITES_ENABLED/$DOMAIN.conf
 $NGINX_INIT reload
 
 echo "Site created for:" $DOMAIN
+sleep 10
 exit 0
