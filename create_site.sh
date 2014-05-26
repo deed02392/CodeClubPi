@@ -36,12 +36,13 @@ fi
 # Create a new user
 HOME_DIR=/home/$USERNAME
 
-mkdir --mode=755 $HOME_DIR
 groupadd -f $RESTRICTED_GROUP
 useradd -d $HOME_DIR -M -N -g $RESTRICTED_GROUP -G $WEB_SERVER_GROUP -s /usr/sbin/nologin -c "Code Club student" $USERNAME
 if [ $? -ne 0 ]; then
+    echo "Failed to create the new user account"
     exit 1
 fi
+mkdir --mode=755 $HOME_DIR
 echo $USERNAME:$PASSWORD | chpasswd
 chown root:root $HOME_DIR
 
