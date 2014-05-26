@@ -8,13 +8,15 @@ import tornado.template
 import sqlite3
 import random
 import subprocess
+import lockfile
 from tornado import escape
 from pprint import pprint
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 template_dir = "templates"
 template_file = "admin.htm.template"
-
+create_site_file = "create_site.sh"
+remove_site_file = "remove_site.sh"
 db_file = "codeclub.db3"
 
 class Utils:
@@ -48,21 +50,28 @@ class Utils:
         
     @staticmethod
     def CreateSite(fullname, username, password, url, indexed):
-        proc = subprocess.Popen([current_dir + "/create_site.sh", fullname, username, password, url], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdoutdata, stderrdata = proc.communicate()
-        if proc.returncode == 0:
-            return 0
-        else:
-            return stdoutdata, stderrdata
+        create_site_path = current_dir + "/" + create_site_file
+        create_lock = lockfile.FileLock(create_site_path)
+        with create_lock:
+            proc = subprocess.Popen([create_site_path, fullname, username, password, url], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdoutdata, stderrdata = proc.communicate()
+            if proc.returncode == 0:
+                return 0
+            else:
+                return stdoutdata, stderrdata
+
 
     @staticmethod
     def RemoveSite(username):
-        proc = subprocess.Popen([current_dir + "/remove_site.sh", username], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdoutdata, stderrdata = proc.communicate()
-        if proc.returncode == 0:
-            return 0
-        else:
-            return stdoutdata, stderrdata
+        remove_site_path = current_dir + "/" + remove_site_file
+        remove_lock = lockfile.FileLock(remove_site_path)
+        with remove_lock:
+            proc = subprocess.Popen([remove_site_path, username], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdoutdata, stderrdata = proc.communicate()
+            if proc.returncode == 0:
+                return 0
+            else:
+                return stdoutdata, stderrdata
 
 class AdminHandler(tornado.web.RequestHandler):
     def get(self):
@@ -127,13 +136,20 @@ class AdminHandler(tornado.web.RequestHandler):
 
 class DelHandler(tornado.web.RequestHandler):
     def get(self, username):
+        c = db.query("SELECT username FROM students WHERE username=?", [username])
+        result = c.fetchone()
+        
+        if not result:
+            self.write("This username has already been deleted (%s)." % username)
+            return
+
         delete_site = Utils.RemoveSite(username)
         if delete_site != 0:
             self.write("<pre>%s\n" % (username))
             self.write("stdout: %s\nstderr: %s" % (delete_site[0], delete_site[1]))
             return
 
-        db.query('''DELETE FROM students WHERE username=?''', [username])
+        db.query("DELETE FROM students WHERE username=?", [username])
         self.redirect("/admin.htm")
 
 
