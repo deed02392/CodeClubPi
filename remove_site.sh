@@ -35,3 +35,4 @@ $NGINX_INIT reload
 
 echo "Site removed:" $DOMAIN
 sleep 10
+exit 0
