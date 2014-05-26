@@ -1,0 +1,14 @@
+<html>
+<head>
+<title>Code Club</title>
+</head>
+<body bgcolor="white" text="black">
+<center><h1>This is Meon Junior School's Code Club server!</h1></center>
+<p>I know the following Code Club members:</p>
+<ul>
+{% for student in students %}
+    <li><a href="{{student['url']}}">{{student['fullname']}}</a></li>
+{% end %}
+</ul>
+</body>
+</html>
