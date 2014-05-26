@@ -2,6 +2,7 @@
 import os
 import re
 import struct
+import pwd
 import tornado.web
 import tornado.ioloop
 import tornado.template
@@ -47,7 +48,7 @@ class Utils:
             'blackberry', 'lime']
         number = ord(struct.unpack("<c", os.urandom(1))[0])
         return random.choice(fruits) + random.choice(zoo_animals) + str(number)
-        
+    
     @staticmethod
     def CreateSite(fullname, username, password, url, indexed):
         create_site_path = current_dir + "/" + create_site_file
@@ -72,9 +73,60 @@ class Utils:
                 return 0
             else:
                 return stdoutdata, stderrdata
+    
 
-class AdminHandler(tornado.web.RequestHandler):
-    def get(self):
+class Users:
+    def add_user(self, fullname, username, password, url, indexed):
+        db.query(("INSERT INTO students (fullname, username, password, url, indexed) "
+                    "VALUES (?, ?, ?, ?, ?)"), [fullname, username, password, 'http://' + url + '.code.club', indexed])
+    
+    def get_students(self):
+        self.__sync_db_users()
+        return self.__get_db()
+    
+    def get_indexed_students(self):
+        self.__sync_db_users()
+        db_users = self.__get_db()
+        return [student for student in db_users if student['isindexed']]
+    
+    def is_available(self, username):
+        self.__sync_db_users()
+        db_users = self.__get_db()
+        system_users = self.__get_system()
+        
+        system_code_club_usernames = [u['username'] for u in system_users]
+        db_usernames = [u['username'] for u in db_users]
+
+        current_usernames = system_code_club_usernames + db_usernames
+
+        if username in current_usernames:
+            return False
+        else:
+            return True
+
+    def remove_user(self, username):
+        db.query("DELETE FROM students WHERE username=?", [username])
+    
+    def is_student(self, username):
+        c = db.query("SELECT username FROM students WHERE username=?", [username])
+        result = c.fetchone()
+        if result:
+            return True
+        else:
+            return False
+        
+    def __sync_db_users(self):
+        db_users = self.__get_db()
+        system_users = self.__get_system()
+        
+        system_code_club_usernames = [u['username'] for u in system_users if u['gecos'] == "Code Club student"]
+        db_usernames = [u['username'] for u in db_users]
+        orphaned_usernames = list(set(system_code_club_usernames) - set(db_usernames))
+        if len(orphaned_usernames) > 0:
+            for username in orphaned_usernames:
+                db.query("INSERT INTO students (username) VALUES (?)", [username])
+    
+    def __get_db(self):
         c = db.query("SELECT fullname, username, password, url, indexed FROM students")
         students = []
         for record in c.fetchall():
@@ -86,11 +138,31 @@ class AdminHandler(tornado.web.RequestHandler):
                 'isindexed': record[4],
                 'deletelink': 'http://code.club:8080/del/' + record[1],
             })
+        return students
+    
+    def __get_system(self):
+        pwd_users = pwd.getpwall()
+        users = []
+        for u in pwd_users:
+            users.append({
+                'username': u[0],
+                'password': None,
+                'gecos': u[4],
+            })
+        return users
+        
+class AdminHandler(tornado.web.RequestHandler):
+    def get(self):
+        users = Users()
+        students = users.get_students()
         template_loader = tornado.template.Loader(current_dir + "/" + template_dir)
         
         output_html = template_loader.load(template_file).generate(students=students)
         self.write(output_html)
+        return
+    
     def post(self):
+        users = Users()
         fullname = escape.xhtml_escape(self.get_argument('fullname'))
         username = escape.xhtml_escape(self.get_argument('username'))
         password = self.get_argument('password')
@@ -117,10 +189,7 @@ class AdminHandler(tornado.web.RequestHandler):
         if not url:
             url = username
         
-        c = db.query("SELECT username FROM students WHERE username=?", [username])
-        result = c.fetchone()
-        
-        if result:
+        if not users.is_available(username):
             self.write("This username already exists (%s). Specify the username if two people in your class have the same full name." % username)
             return
         
@@ -130,16 +199,14 @@ class AdminHandler(tornado.web.RequestHandler):
             self.write("stdout: %s\nstderr: %s" % (create_site[0], create_site[1]))
             return
         
-        db.query('''INSERT INTO students (fullname, username, password, url, indexed)
-            VALUES (?, ?, ?, ?, ?)''', [fullname, username, password, 'http://' + url + '.code.club', indexed])
+        users.add_user(fullname, username, password, url, indexed)
         self.redirect("/admin.htm")
 
 class DelHandler(tornado.web.RequestHandler):
     def get(self, username):
-        c = db.query("SELECT username FROM students WHERE username=?", [username])
-        result = c.fetchone()
+        users = Users()
         
-        if not result:
+        if not users.is_student(username):
             self.write("This username has already been deleted (%s)." % username)
             return
 
@@ -148,37 +215,46 @@ class DelHandler(tornado.web.RequestHandler):
             self.write("<pre>%s\n" % (username))
             self.write("stdout: %s\nstderr: %s" % (delete_site[0], delete_site[1]))
             return
-
-        db.query("DELETE FROM students WHERE username=?", [username])
+        users.remove_user(username)
         self.redirect("/admin.htm")
 
 
 class IndexHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.write("Index")
+    def get(self, path):
+        if path:
+            self.redirect("/")
+            return
+        users = Users()
+        students = users.get_indexed_students()
+        
+        template_loader = tornado.template.Loader(current_dir + "/" + template_dir)
+        output_html = template_loader.load("index.htm.template").generate(students=students)
+        self.write(output_html)
+        return
         
 application = tornado.web.Application([
-    (r"/", IndexHandler),
     (r"/admin.htm", AdminHandler),
     (r"/del/([a-z]+)", DelHandler),
+    (r"/(.*)", IndexHandler),
 ], debug=True)
 
 class DatabaseHandler(object):
     def __init__(self, db):
         self.conn = sqlite3.connect(db)
         self.cur = self.conn.cursor()
-
+    
     def query(self, arg, tuple=()):
         self.cur.execute(arg, tuple)
         self.conn.commit()
         return self.cur
-
+    
     def __del__(self):
         self.conn.close()
 
 if __name__ == "__main__":
     application.listen(8080)
     db = DatabaseHandler(current_dir + "/" + db_file)
-    db.query('''CREATE TABLE IF NOT EXISTS students 
-            (fullname TEXT, username TEXT UNIQUE, password TEXT, url TEXT, indexed INT)''')
+    db.query(("CREATE TABLE IF NOT EXISTS students "
+            "(fullname TEXT, username TEXT UNIQUE, password TEXT, url TEXT, indexed INT)"))
+
     tornado.ioloop.IOLoop.instance().start()
