@@ -1,5 +1,7 @@
 #!/usr/bin/python
 import os
+import sys
+import signal
 import re
 import struct
 import pwd
@@ -21,6 +23,25 @@ create_site_file = "create_site.sh"
 remove_site_file = "remove_site.sh"
 db_file = "codeclub.db3"
 
+def on_exit(sig, func=None):
+    tornado.ioloop.IOLoop.instance().add_callback(shutdown)
+    print "Exiting..."
+    sys.exit(1)
+
+def shutdown():
+    application.stop()
+    io_loop = tornado.ioloop.IOLoop.instance()
+    deadline = time.time() + 3
+
+    def stop_loop():
+        now = time.time()
+        if now < deadline and (io_loop._callbacks or io_loop._timeouts):
+            io_loop.add_timeout(now + 1, stop_loop)
+        else:
+            io_loop.stop()
+    stop_loop()
+    del db
+    
 class Utils:
     valid_fullname = re.compile(r"^[A-Za-z]+(?: ?[A-Za-z]+)*$")
     valid_username = re.compile(r"^[a-z]+$")
@@ -274,6 +295,7 @@ class DatabaseHandler(object):
         return self.cur
     
     def __del__(self):
+        print "Closing db"
         self.conn.close()
 
 if __name__ == "__main__":
@@ -281,5 +303,8 @@ if __name__ == "__main__":
     db = DatabaseHandler(current_dir + "/" + db_file)
     db.query(("CREATE TABLE IF NOT EXISTS students "
             "(fullname TEXT, username TEXT UNIQUE, password TEXT, url TEXT, indexed INT)"))
-
+    
+    signal.signal(signal.SIGTERM, on_exit)
+    signal.signal(signal.SIGINT, on_exit)
+    
     tornado.ioloop.IOLoop.instance().start()
