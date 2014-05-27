@@ -158,7 +158,7 @@ class Users:
                 'password': record[2],
                 'url': record[3],
                 'isindexed': record[4],
-                'deletelink': 'http://code.club:8080/del/' + record[1],
+                'deletelink': '/del/' + record[1],
             })
         return students
     
