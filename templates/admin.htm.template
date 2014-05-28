@@ -28,7 +28,7 @@
 		</tbody>
 		<tfoot>
 			<tr>
-				<form action="" method="post" name="add-student">
+				<form action="/add" method="post" name="add-student">
 					<td><input type="text" name="fullname" placeholder="Full name" /></td>
 					<td><input type="text" name="username" placeholder="Username" /></td>
 					<td><input type="text" name="password" placeholder="Password" /></td>

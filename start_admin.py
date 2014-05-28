@@ -15,13 +15,14 @@ import subprocess
 import lockfile
 from tornado import escape
 from pprint import pprint
+from passlib.context import CryptContext
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
-template_dir = "templates"
-template_file = "admin.htm.template"
-create_site_file = "create_site.sh"
-remove_site_file = "remove_site.sh"
-db_file = "codeclub.db3"
+templates_dir = "templates"
+create_site_file = "scripts/create_site.sh"
+remove_site_file = "scripts/remove_site.sh"
+db_file = "lib/codeclub.db3"
+pwd_context = CryptContext(schemes=["sha256_crypt"],default="sha256_crypt")
 
 def on_exit(sig, func=None):
     tornado.ioloop.IOLoop.instance().add_callback(shutdown)
@@ -51,7 +52,7 @@ class Utils:
         return s if len(s)<=l else s[0:l-3]+'...'
     
     @staticmethod
-    def FullnameToUsername(fullname):
+    def fullname_to_username(fullname):
         fullname = fullname.lower()
         fullname = ''.join(fullname.split()) # Kill whitespace
         fullname = Utils.string_cap(fullname, 30)
@@ -61,7 +62,7 @@ class Utils:
             return False
     
     @staticmethod
-    def CreatePassword():
+    def create_password():
         zoo_animals = ['elephant', 'lion', 'tiger', 'giraffe', 'penguin', 'gorillas', 'sharks',
             'panda', 'meerkat', 'crocodile', 'bear', 'otter', 'wolf', 'cheetah', 'snake', 'zebra',
             'frog', 'dolphin']
@@ -72,8 +73,8 @@ class Utils:
         return random.choice(fruits) + random.choice(zoo_animals) + str(number)
     
     @staticmethod
-    def CreateSite(fullname, username, password, url, indexed):
-        create_site_path = current_dir + "/" + create_site_file
+    def create_site(fullname, username, password, url, indexed):
+        create_site_path = os.path.join(current_dir, create_site_file)
         create_lock = lockfile.FileLock(create_site_path)
         with create_lock:
             proc = subprocess.Popen([create_site_path, fullname, username, password, url], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -83,10 +84,9 @@ class Utils:
             else:
                 return stdoutdata, stderrdata
 
-
     @staticmethod
-    def RemoveSite(username):
-        remove_site_path = current_dir + "/" + remove_site_file
+    def remove_site(username):
+        remove_site_path = os.path.join(current_dir, remove_site_file)
         remove_lock = lockfile.FileLock(remove_site_path)
         with remove_lock:
             proc = subprocess.Popen([remove_site_path, username], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -95,7 +95,12 @@ class Utils:
                 return 0
             else:
                 return stdoutdata, stderrdata
-    
+    @staticmethod
+    def hash_password(password, salt=None):
+        if not salt:
+            salt = binascii.hexlify(os.urandom(32))
+        
+        return scrypt.encrypt(salt, password, hash_for_secs), salt
 
 class Users:
     def add_user(self, fullname, username, password, url, indexed):
@@ -175,18 +180,21 @@ class Users:
 
 class LoginHandler(tornado.web.RequestHandler):
     def get(self):
-        template_loader = tornado.template.Loader(current_dir + "/" + template_dir)
-        output_html = template_loader.load("login.htm.template").generate()
-        self.write(output_html)
+        self.render("login.htm.template")
         return
     
     def post(self):
-        password = escape.xhtml_escape(self.get_argument('password'))
-        if password == "zomg123":
-            self.set_secure_cookie("logged_in", "admin")
+        password = self.get_argument('password')
+        c = db.query("SELECT password FROM admin WHERE oid=1")
+        hashed_password = c.fetchone()[0]
         
-        self.redirect(self.get_argument('next'))
-    
+        if pwd_context.verify(password, hashed_password):
+            self.set_secure_cookie("logged_in", "admin")
+            self.redirect(self.get_argument('next'))
+        else:
+            self.render("login.htm.template", badguess=1)        
+        
+
 class AdminHandler(tornado.web.RequestHandler):
     def get_current_user(self):
         return self.get_secure_cookie("logged_in")
@@ -195,12 +203,25 @@ class AdminHandler(tornado.web.RequestHandler):
     def get(self):
         users = Users()
         students = users.get_students()
-        template_loader = tornado.template.Loader(current_dir + "/" + template_dir)
         
-        output_html = template_loader.load(template_file).generate(students=students)
-        self.write(output_html)
-        return
-    
+        self.render("admin.htm.template", students=students)
+
+class PasswordHandler(tornado.web.RequestHandler):
+    def get_current_user(self):
+        return self.get_secure_cookie("logged_in")
+
+    @tornado.web.authenticated
+    def post(self):
+        password = self.get_argument('password')
+        password = pwd_context.encrypt(password)
+        db.query(("INSERT OR REPLACE INTO admin (oid, password) "
+                    "VALUES (1, ?)"), [password])
+        self.redirect("/admin.htm")
+        
+class AddHandler(tornado.web.RequestHandler):
+    def get_current_user(self):
+        return self.get_secure_cookie("logged_in")
+
     @tornado.web.authenticated
     def post(self):
         users = Users()
@@ -221,12 +242,12 @@ class AdminHandler(tornado.web.RequestHandler):
             return
 
         if not username:
-            username = Utils.FullnameToUsername(fullname)
+            username = Utils.fullname_to_username(fullname)
             if not username:
                 self.write("Please specify a username, I couldn't create one from %s" % fullname)
                 return
         if not password:
-            password = Utils.CreatePassword()
+            password = Utils.create_password()
         if not url:
             url = username
         
@@ -234,7 +255,7 @@ class AdminHandler(tornado.web.RequestHandler):
             self.write("This username already exists (%s). Specify the username if two people in your class have the same full name." % username)
             return
         
-        create_site = Utils.CreateSite(fullname, username, password, url, indexed)
+        create_site = Utils.create_site(fullname, username, password, url, indexed)
         if create_site != 0:
             self.write("<pre>%s %s %s %s %r\n" % (fullname, username, password, url, indexed))
             self.write("stdout: %s\nstderr: %s" % (create_site[0], create_site[1]))
@@ -255,14 +276,13 @@ class DelHandler(tornado.web.RequestHandler):
             self.write("This username has already been deleted (%s)." % username)
             return
 
-        delete_site = Utils.RemoveSite(username)
+        delete_site = Utils.remove_site(username)
         if delete_site != 0:
             self.write("<pre>%s\n" % (username))
             self.write("stdout: %s\nstderr: %s" % (delete_site[0], delete_site[1]))
             return
         users.remove_user(username)
         self.redirect("/admin.htm")
-
 
 class IndexHandler(tornado.web.RequestHandler):
     def get(self, path):
@@ -272,17 +292,20 @@ class IndexHandler(tornado.web.RequestHandler):
         users = Users()
         students = users.get_indexed_students()
         
-        template_loader = tornado.template.Loader(current_dir + "/" + template_dir)
-        output_html = template_loader.load("index.htm.template").generate(students=students)
-        self.write(output_html)
-        return
+        self.render("index.htm.template", students=students)
         
 application = tornado.web.Application([
     (r"/admin.htm", AdminHandler),
+    (r"/add", AddHandler),
+    (r"/pass", PasswordHandler),
     (r"/del/([a-z]+)", DelHandler),
     (r"/login.htm", LoginHandler),
     (r"/(.*)", IndexHandler),
-], debug=True, login_url="/login.htm", cookie_secret=binascii.hexlify(os.urandom(32)))
+],
+debug=True,
+login_url="/login.htm",
+cookie_secret=binascii.hexlify(os.urandom(32)),
+template_path=os.path.join(current_dir, templates_dir))
 
 class DatabaseHandler(object):
     def __init__(self, db):
@@ -300,9 +323,11 @@ class DatabaseHandler(object):
 
 if __name__ == "__main__":
     application.listen(8080, "127.0.0.1")
-    db = DatabaseHandler(current_dir + "/" + db_file)
+    db = DatabaseHandler(os.path.join(current_dir, db_file))
     db.query(("CREATE TABLE IF NOT EXISTS students "
             "(fullname TEXT, username TEXT UNIQUE, password TEXT, url TEXT, indexed INT)"))
+    db.query(("CREATE TABLE IF NOT EXISTS admin "
+            "(password TEXT NOT NULL)"))
     
     signal.signal(signal.SIGTERM, on_exit)
     signal.signal(signal.SIGINT, on_exit)
