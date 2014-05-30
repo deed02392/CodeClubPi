@@ -31,6 +31,10 @@ a:hover {
 #header ul li {
     vertical-align: top;
     display: inline-block;
+    margin-right: 1em;
+}
+#header ul li.last {
+    margin-right: 0;
 }
 
 #header ul li a {

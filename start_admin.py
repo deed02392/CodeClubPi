@@ -282,11 +282,19 @@ class PasswordHandler(tornado.web.RequestHandler):
 
     @tornado.web.authenticated
     def post(self):
-        password = self.get_argument('password')
-        password = pwd_context.encrypt(password)
-        db.query(("INSERT OR REPLACE INTO admin (oid, password) "
-                    "VALUES (1, ?)"), [password])
-        self.redirect("/admin.htm")
+        new_password = self.get_argument('new-password', '')
+        confirm_new_password = self.get_argument('confirm-new-password', '')
+        
+        if new_password:
+            if new_password == confirm_new_password:
+                password = pwd_context.encrypt(new_password)
+                db.query(("INSERT OR REPLACE INTO admin (oid, password) "
+                            "VALUES (1, ?)"), [password])
+                self.write("OK");
+            else:
+                self.write("Passwords did not match. Please re-enter.")
+        else:
+            self.write("You must set a password, else anyone can delete all work!")
         
 class AjaxAddHandler(tornado.web.RequestHandler):
     def get_current_user(self):

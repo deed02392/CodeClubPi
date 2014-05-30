@@ -5,7 +5,7 @@
 (function ($) {
 
     $.extend(true, $.hik.jtable.prototype.options.messages, {
-        serverCommunicationError: 'An error occured communicating with the server. The Raspberry Pi may have crashed.',
+        serverCommunicationError: 'An error occured. The Raspberry Pi may have crashed.',
         loadingMessage: 'Loading records...',
         noDataAvailable: 'No students yet!',
         addNewRecord: 'Add new student',
@@ -13,10 +13,10 @@
         areYouSure: 'Confirm',
         deleteConfirmation: 'This student and all their work will be deleted!',
         save: 'Save',
-        saving: 'Saving',
+        saving: 'Saving...',
         cancel: 'Cancel',
         deleteText: 'Delete',
-        deleting: 'Deleting',
+        deleting: 'Deleting...',
         error: 'Error',
         close: 'Close',
         cannotLoadOptionsFor: 'Cannot load options for field {0}',

@@ -18,7 +18,8 @@
     <div id="header">
         <a href="https://www.codeclub.org.uk"><img alt="Logo" height="150" src="/static/css/images/logo.png" width="150" /></a>
         <ul>
-            <li><a href="/logout">Logout</a></li>
+            <li><a id="change-password" href="#">Change Password</a></li>
+            <li class="last"><a href="/logout">Logout</a></li>
         </ul>
     </div>
     <div id="contents">
@@ -27,6 +28,17 @@
     </div>
     <div id="footer">
         <span>Created by George Hafiz &lt;<a href="mailto:georgehafiz@gmail.com">georgehafiz@gmail.com</a>&gt;</span>
+    </div>
+    
+    <div id="change-password-dialog-form" title="Change password">
+        <p class="validateTips"></p>
+
+        <form>
+            <label for="new-password">New Password</label>
+            <input type="password" name="new-password" id="new-password" class="text ui-widget-content ui-corner-all">
+            <label for="confirm-new-password">Confirm New Password</label>
+            <input type="password" name="confirm-new-password" id="confirm-new-password" class="text ui-widget-content ui-corner-all">
+        </form>
     </div>
 </body>
 </html>
