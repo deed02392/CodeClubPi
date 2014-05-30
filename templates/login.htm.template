@@ -12,7 +12,7 @@
     <script type="text/javascript">
     $(function () {
         $("#submit").hide();
-        $("#submit").prop('disabled','disabled');
+        $("#submit").prop('disabled', true);
 
         function updateTips(t) {
             $tips
