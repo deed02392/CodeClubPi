@@ -201,7 +201,11 @@ class LoginHandler(tornado.web.RequestHandler):
         return
     
     def post(self):
-        password = self.get_argument('password')
+        password = self.get_argument('password', '')
+        if not password:
+            self.write("ERROR")
+            return
+        
         c = db.query("SELECT password FROM admin WHERE oid=1")
         hashed_password = c.fetchone()[0]
         
@@ -282,8 +286,16 @@ class PasswordHandler(tornado.web.RequestHandler):
 
     @tornado.web.authenticated
     def post(self):
+        current_password = self.get_argument('current-password', '')
         new_password = self.get_argument('new-password', '')
         confirm_new_password = self.get_argument('confirm-new-password', '')
+        
+        if current_password:
+            c = db.query("SELECT password FROM admin WHERE oid=1")
+            hashed_password = c.fetchone()[0]
+            if not pwd_context.verify(current_password, hashed_password):
+                self.write("Current password is incorrect.")
+                return
         
         if new_password:
             if new_password == confirm_new_password:

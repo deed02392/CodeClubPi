@@ -34,6 +34,8 @@
         <p class="validateTips"></p>
 
         <form>
+            <label for="current-password">Current Password</label>
+            <input type="password" name="current-password" id="current-password" class="text ui-widget-content ui-corner-all">
             <label for="new-password">New Password</label>
             <input type="password" name="new-password" id="new-password" class="text ui-widget-content ui-corner-all">
             <label for="confirm-new-password">Confirm New Password</label>

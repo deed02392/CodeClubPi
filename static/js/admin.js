@@ -62,7 +62,8 @@ $(document).ready(function () {
             $tips.removeClass("ui-state-highlight", 1500);
         }, 500);
     }
-
+    
+    var $current_password = $("#current-password");
     var $new_password = $("#new-password");
     var $confirm_new_password = $("#confirm-new-password");
     var $tips = $(".validateTips");
@@ -90,6 +91,7 @@ $(document).ready(function () {
                 id: "dialog-change-pass-btn",
                 click: function() {
                     var bValid = true;
+                    $current_password.removeClass("ui-state-error");
                     $new_password.removeClass("ui-state-error");
                     $confirm_new_password.removeClass("ui-state-error");
                     
@@ -97,15 +99,18 @@ $(document).ready(function () {
                     $button.text("Changing...");
 
                     $.post("/pass", {
+                        "current-password": $current_password.val(),
                         "new-password": $new_password.val(),
                         "confirm-new-password": $confirm_new_password.val()
                     }, function (data) {
                         if (data == "OK") {
                             window.location.replace("/login.htm");
                         } else {
+                            $current_password.addClass("ui-state-error");
                             $new_password.addClass("ui-state-error");
                             $confirm_new_password.addClass("ui-state-error");
                             updateTips(data);
+                            $current_password.select();
                             $button.text("Change");
                         }
                     });
