@@ -1,14 +1,37 @@
+<!DOCTYPE html>
 <html>
 <head>
-<title>Code Club</title>
+    <title>Admin :: Code Club Web Server</title>
+    
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+    <link rel="stylesheet" type="text/css" href="/static/css/jtable_jqueryui.min.css" />
+    <link rel="stylesheet" type="text/css" href="/static/css/south-street/jquery-ui.min.css" />
+    <link rel="stylesheet" type="text/css" href="/static/css/south-street/jquery.ui.theme.css" />
+    
+    <script src="/static/js/jquery-1.11.1.min.js" type="text/javascript"></script>
+    <script src="/static/js/jquery-ui-1.10.4.min.js" type="text/javascript"></script>
+    <script src="/static/js/jtable/jquery.jtable.min.js" type="text/javascript"></script>
+    <script src="/static/js/jtable/localization/jquery.jtable.en.js" type="text/javascript"></script>
+    <script src="/static/js/admin.js" type="text/javascript"></script>
 </head>
-<body bgcolor="white" text="black">
-<center><h1>This is Meon Junior School's Code Club server!</h1></center>
-<p>I know the following Code Club members:</p>
-<ul>
-{% for student in students %}
-    <li><a href="{{student['url']}}">{{student['fullname']}}</a></li>
-{% end %}
-</ul>
+<body>
+    <div id="header">
+        <a href="https://www.codeclub.org.uk"><img alt="Logo" height="150" src="/static/css/images/logo.png" width="150" /></a>
+        <ul>
+            <li><a href="/login.htm">Login</a></li>
+        </ul>
+    </div>
+    <div id="contents">
+        <h1>Students</h1>
+        <p>I know the following Code Club members:</p>
+        <ul>
+        {% for student in students %}
+            <li><a href="{{student['url']}}">{{student['fullname']}}</a></li>
+        {% end %}
+        </ul>
+    </div>
+    <div id="footer">
+        <span>Created by George Hafiz &lt;<a href="mailto:georgehafiz@gmail.com">georgehafiz@gmail.com</a>&gt;</span>
+    </div>
 </body>
 </html>

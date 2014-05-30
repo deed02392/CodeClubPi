@@ -1,43 +1,32 @@
 <!DOCTYPE html>
 <html>
-<head><title>Admin :: Code Club Web Server</title></head>
+<head>
+    <title>Admin :: Code Club Web Server</title>
+    
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+    <link rel="stylesheet" type="text/css" href="/static/css/jtable_jqueryui.min.css" />
+    <link rel="stylesheet" type="text/css" href="/static/css/south-street/jquery-ui.min.css" />
+    <link rel="stylesheet" type="text/css" href="/static/css/south-street/jquery.ui.theme.css" />
+    
+    <script src="/static/js/jquery-1.11.1.min.js" type="text/javascript"></script>
+    <script src="/static/js/jquery-ui-1.10.4.min.js" type="text/javascript"></script>
+    <script src="/static/js/jtable/jquery.jtable.min.js" type="text/javascript"></script>
+    <script src="/static/js/jtable/localization/jquery.jtable.en.js" type="text/javascript"></script>
+    <script src="/static/js/admin.js" type="text/javascript"></script>
+</head>
 <body>
-	<h1>Manage Students</h1>
-	<table border=1>
-		<thead>
-			<tr>
-				<td>Full Name</td>
-				<td>Username</td>
-				<td>Password</td>
-				<td>URL</td>
-				<td>Indexed?</td>
-				<td>Del</td>
-			</tr>
-		</thead>
-		<tbody>
-		{% for student in students %}
-			<tr>
-				<td>{% if student['password'] %}{{ escape(student['fullname']) }}{% end %}</td>
-				<td>{{ escape(student['username']) }}</td>
-				<td>{% if student['password'] %}{{escape(student['password'])}}{% else %}<em>Encrypted</em>{% end %}</td>
-				<td><a href="{% if student['url'] %}{{ escape(student['url']) }}{% end %}">{% if student['url'] %}{{ escape(student['url']) }}{% end %}</a></td>
-				<td><input type="checkbox" {% if student['isindexed'] == 1 %}checked="checked"{% end %} disabled="disabled" /></td>
-				<td><a href="{{ escape(student['deletelink']) }}">Del</a></td>
-			</tr>
-		{% end %}
-		</tbody>
-		<tfoot>
-			<tr>
-				<form action="/add" method="post" name="add-student">
-					<td><input type="text" name="fullname" placeholder="Full name" /></td>
-					<td><input type="text" name="username" placeholder="Username" /></td>
-					<td><input type="text" name="password" placeholder="Password" /></td>
-					<td><input type="text" name="url" placeholder="URL" />.code.club</td>
-					<td><input type="checkbox" name="indexed" checked="checked" /></td>
-					<td><input type="submit" name="submit" value="Add" /></td>
-				</form>
-			</tr>
-		</tfoot>
-	</table>
+    <div id="header">
+        <a href="https://www.codeclub.org.uk"><img alt="Logo" height="150" src="/static/css/images/logo.png" width="150" /></a>
+        <ul>
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </div>
+    <div id="contents">
+        <h1>Manage Students</h1>
+        <div id="students-jtable"></div>
+    </div>
+    <div id="footer">
+        <span>Created by George Hafiz &lt;<a href="mailto:georgehafiz@gmail.com">georgehafiz@gmail.com</a>&gt;</span>
+    </div>
 </body>
 </html>

@@ -9,6 +9,7 @@ import binascii
 import tornado.web
 import tornado.ioloop
 import tornado.template
+import json
 import sqlite3
 import random
 import subprocess
@@ -19,6 +20,7 @@ from passlib.context import CryptContext
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 templates_dir = "templates"
+static_dir = "static"
 create_site_file = "scripts/create_site.sh"
 remove_site_file = "scripts/remove_site.sh"
 db_file = "lib/codeclub.db3"
@@ -42,7 +44,17 @@ def shutdown():
             io_loop.stop()
     stop_loop()
     del db
-    
+
+def jtable_reply(ok, data):
+    dict = {}
+    if ok:
+        dict['Result'] = "OK"
+        dict['Record'] = data
+    else:
+        dict['Result'] = "ERROR"
+        dict['Message'] = data
+    return json.dumps(dict)
+
 class Utils:
     valid_fullname = re.compile(r"^[A-Za-z]+(?: ?[A-Za-z]+)*$")
     valid_username = re.compile(r"^[a-z]+$")
@@ -105,15 +117,15 @@ class Utils:
 class Users:
     def add_user(self, fullname, username, password, url, indexed):
         db.query(("INSERT INTO students (fullname, username, password, url, indexed) "
-                    "VALUES (?, ?, ?, ?, ?)"), [fullname, username, password, 'http://' + url + '.code.club', indexed])
+                    "VALUES (?, ?, ?, ?, ?)"), [fullname, username, password, url, indexed])
     
-    def get_students(self):
+    def get_students(self, sortby, sortway):
         self.__sync_db_users()
-        return self.__get_db()
+        return self.__get_db(sortby, sortway)
     
     def get_indexed_students(self):
         self.__sync_db_users()
-        db_users = self.__get_db()
+        db_users = self.get_students('fullname', 'ASC')
         return [student for student in db_users if student['isindexed']]
     
     def is_available(self, username):
@@ -153,17 +165,22 @@ class Users:
             for username in orphaned_usernames:
                 db.query("INSERT INTO students (username) VALUES (?)", [username])
     
-    def __get_db(self):
-        c = db.query("SELECT fullname, username, password, url, indexed FROM students")
+    def __get_db(self, sortby=None, sortway=None):
+        order_by = None
+        if sortby and sortby.lower() in ['fullname']:
+            if sortway and sortway.upper() in ['ASC', 'DESC']:
+                order_by = " ORDER BY %s %s" % (sortby.lower(), sortway.upper())
+        
+        query = "SELECT fullname, username, password, url, indexed FROM students" + (order_by if order_by else "")
+        c = db.query(query)
         students = []
         for record in c.fetchall():
             students.append({
-                'fullname': record[0],
+                'fullname': record[0] if record[0] else "<em>Unknown</em>",
                 'username': record[1],
-                'password': record[2],
-                'url': record[3],
-                'isindexed': record[4],
-                'deletelink': '/del/' + record[1],
+                'password': record[2] if record[2] else "<em>Encrypted</em>",
+                'url': record[3] if record[3] else "",
+                'isindexed': record[4] if record[4] else 0,
             })
         return students
     
@@ -190,10 +207,18 @@ class LoginHandler(tornado.web.RequestHandler):
         
         if pwd_context.verify(password, hashed_password):
             self.set_secure_cookie("logged_in", "admin")
-            self.redirect(self.get_argument('next'))
+            self.write("OK")
         else:
-            self.render("login.htm.template", badguess=1)        
-        
+            self.write("ERROR")      
+
+class LogoutHandler(tornado.web.RequestHandler):
+    def get_current_user(self):
+        return self.get_secure_cookie("logged_in")
+    
+    @tornado.web.authenticated
+    def get(self):
+        self.clear_all_cookies()
+        self.redirect("/")
 
 class AdminHandler(tornado.web.RequestHandler):
     def get_current_user(self):
@@ -201,10 +226,55 @@ class AdminHandler(tornado.web.RequestHandler):
     
     @tornado.web.authenticated
     def get(self):
+        self.render("admin.htm.template")
+
+class AjaxListHandler(tornado.web.RequestHandler):
+    def get_current_user(self):
+        return self.get_secure_cookie("logged_in")
+    
+    @tornado.web.authenticated
+    def post(self):
         users = Users()
-        students = users.get_students()
-        
-        self.render("admin.htm.template", students=students)
+        sorting = escape.xhtml_escape(self.get_argument('jtSorting', ''))
+        sortby = None
+        sortway = None
+        if sorting:
+            sortby, sortway = sorting.split()
+            
+        records = users.get_students(sortby, sortway)
+        if records:
+            self.write(json.dumps({
+                "Result":"OK",
+                "Records": records
+            }))
+        else:
+            self.write(json.dumps({
+                "Result":"ERROR"
+            }))
+
+class AjaxDeleteHandler(tornado.web.RequestHandler):
+    def get_current_user(self):
+        return self.get_secure_cookie("logged_in")
+    
+    @tornado.web.authenticated
+    def post(self):
+        users = Users()
+        username = escape.xhtml_escape(self.get_argument('username'))
+        if not users.is_student(username):
+            self.write(json.dumps({"Result": "OK"}))
+            return
+
+        delete_site = Utils.remove_site(username)
+        if delete_site != 0:
+            self.write(json.dumps({
+                "Result": "ERROR",
+                "Message": ("System error deleting user (%s)."
+                            "stdout: %s"
+                            "stderr: %s") % (username, delete_site[0], delete_site[1])
+            }))
+            return
+        users.remove_user(username)
+        self.write(json.dumps({"Result": "OK"}))
 
 class PasswordHandler(tornado.web.RequestHandler):
     def get_current_user(self):
@@ -218,33 +288,30 @@ class PasswordHandler(tornado.web.RequestHandler):
                     "VALUES (1, ?)"), [password])
         self.redirect("/admin.htm")
         
-class AddHandler(tornado.web.RequestHandler):
+class AjaxAddHandler(tornado.web.RequestHandler):
     def get_current_user(self):
         return self.get_secure_cookie("logged_in")
 
     @tornado.web.authenticated
     def post(self):
         users = Users()
-        fullname = escape.xhtml_escape(self.get_argument('fullname'))
-        username = escape.xhtml_escape(self.get_argument('username'))
-        password = self.get_argument('password')
-        url = escape.xhtml_escape(self.get_argument('url'))
-        try:
-            indexed = 1 if self.get_argument('indexed') == "on" else 0
-        except tornado.web.MissingArgumentError:
-            indexed = 0
+        fullname = escape.xhtml_escape(self.get_argument('fullname', ''))
+        username = escape.xhtml_escape(self.get_argument('username', ''))
+        password = self.get_argument('password', '')
+        url = escape.xhtml_escape(self.get_argument('url', ''))
+        indexed = 1 if self.get_argument('isindexed', '') else 0
         
         if not fullname:
-            self.write("Full Name must be specified")
+            self.write(jtable_reply(False, "Full Name must be specified"))
             return
         elif not Utils.valid_fullname.match(fullname):
-            self.write("Full Name must just be letters with a single space separating the names")
+            self.write(jtable_reply(False, "Full Name must just be letters with a single space separating the names"))
             return
 
         if not username:
             username = Utils.fullname_to_username(fullname)
             if not username:
-                self.write("Please specify a username, I couldn't create one from %s" % fullname)
+                self.write(jtable_reply(False, "Please specify a username, I couldn't create one from %s" % fullname))
                 return
         if not password:
             password = Utils.create_password()
@@ -252,37 +319,24 @@ class AddHandler(tornado.web.RequestHandler):
             url = username
         
         if not users.is_available(username):
-            self.write("This username already exists (%s). Specify the username if two people in your class have the same full name." % username)
+            self.write(jtable_reply(False, "This username already exists (%s). Specify the username if two people in your class have the same full name." % username))
             return
         
         create_site = Utils.create_site(fullname, username, password, url, indexed)
         if create_site != 0:
-            self.write("<pre>%s %s %s %s %r\n" % (fullname, username, password, url, indexed))
-            self.write("stdout: %s\nstderr: %s" % (create_site[0], create_site[1]))
+            self.write(jtable_reply(False, "%s %s %s %s %r\n" % (fullname, username, password, url, indexed)))
+            self.write(jtable_reply(False, "stdout: %s\nstderr: %s" % (create_site[0], create_site[1])))
             return
         
+        url = 'http://' + url + '.code.club';
         users.add_user(fullname, username, password, url, indexed)
-        self.redirect("/admin.htm")
-
-class DelHandler(tornado.web.RequestHandler):
-    def get_current_user(self):
-        return self.get_secure_cookie("logged_in")
-
-    @tornado.web.authenticated
-    def get(self, username):
-        users = Users()
-        
-        if not users.is_student(username):
-            self.write("This username has already been deleted (%s)." % username)
-            return
-
-        delete_site = Utils.remove_site(username)
-        if delete_site != 0:
-            self.write("<pre>%s\n" % (username))
-            self.write("stdout: %s\nstderr: %s" % (delete_site[0], delete_site[1]))
-            return
-        users.remove_user(username)
-        self.redirect("/admin.htm")
+        self.write(jtable_reply(True, {
+            'fullname': fullname,
+            'username': username,
+            'password': password,
+            'url': url,
+            'isindexed': indexed,
+        }))
 
 class IndexHandler(tornado.web.RequestHandler):
     def get(self, path):
@@ -296,16 +350,19 @@ class IndexHandler(tornado.web.RequestHandler):
         
 application = tornado.web.Application([
     (r"/admin.htm", AdminHandler),
-    (r"/add", AddHandler),
     (r"/pass", PasswordHandler),
-    (r"/del/([a-z]+)", DelHandler),
+    (r"/ajax/students-add", AjaxAddHandler),
+    (r"/ajax/students-list", AjaxListHandler),
+    (r"/ajax/students-delete", AjaxDeleteHandler),
     (r"/login.htm", LoginHandler),
+    (r"/logout", LogoutHandler),
     (r"/(.*)", IndexHandler),
 ],
 debug=True,
 login_url="/login.htm",
 cookie_secret=binascii.hexlify(os.urandom(32)),
-template_path=os.path.join(current_dir, templates_dir))
+template_path=os.path.join(current_dir, templates_dir),
+static_path=os.path.join(current_dir, static_dir))
 
 class DatabaseHandler(object):
     def __init__(self, db):
@@ -318,7 +375,6 @@ class DatabaseHandler(object):
         return self.cur
     
     def __del__(self):
-        print "Closing db"
         self.conn.close()
 
 if __name__ == "__main__":

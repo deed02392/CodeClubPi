@@ -1,0 +1,94 @@
+* {
+    margin:0;
+    padding:0;
+}
+
+body {
+    width: 1000px;
+    margin: 0 auto;
+    background: #f8faf4;
+    font-family: "Helvetica",Helvetica,Arial,sans-serif;
+}
+
+a {
+    color: #393;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+#header {
+    padding-top:15px;
+    height:150px;
+}
+#header ul {
+    height: 150px;
+    display: block;
+    float:right;
+}
+#header ul li {
+    vertical-align: top;
+    display: inline-block;
+}
+
+#header ul li a {
+    color: #393;
+    text-decoration: none;
+    font-size: 1em;
+    font-weight: bold;
+    font-family: "Helvetica",Helvetica,Arial,sans-serif;
+}
+#header ul li a:hover {
+    color: #2d862d;
+    text-decoration: none;
+}
+
+#contents h1 {
+    color: #393;
+    font-family: "Museo Sans Rounded 300",arial,sans-serif;
+    text-decoration: none;
+    word-spacing: normal;
+    text-align: left;
+    text-indent: 0.5em;
+    letter-spacing: 0;
+    line-height: 1.5em;
+    font-size: 2.4em;
+    font-weight: normal;
+    border-bottom: solid 2px #009320;
+    margin-bottom: 0.7em;
+}
+
+#contents ul {
+    margin: 1em 0 1em 2em;
+}
+
+#contents ul li {
+    padding: 0.2em;
+    list-style-type: circle;
+}   
+
+#footer span {
+    padding: 1em;
+    font-size: 1.0em;
+    color: #666;
+    font-family: "Helvetica",Helvetica,Arial,sans-serif;
+}
+
+#students-jtable {
+    margin-bottom: 1.5em;
+}
+
+.no-close .ui-dialog-titlebar-close {
+  display: none;
+}
+
+.hide-password {
+    background: #949494;
+    color: #949494;
+}
+.hide-password:hover {
+    background: none;
+    color: #222;
+}
