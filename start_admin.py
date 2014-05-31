@@ -212,26 +212,12 @@ class AuthenticatedRequestHandler(tornado.web.RequestHandler):
         super(AuthenticatedRequestHandler, self).__init__(*args, **kwargs)
     def get_current_user(self):
         return self.get_secure_cookie("logged_in")
+
+class AdminHandler(AuthenticatedRequestHandler):
     
-class LoginHandler(tornado.web.RequestHandler):
+    @tornado.web.authenticated
     def get(self):
-        self.render("login.htm.template")
-        return
-    
-    def post(self):
-        password = self.get_argument('password', '')
-        if not password:
-            self.write("ERROR")
-            return
-        
-        c = db.query("SELECT password FROM admin WHERE oid=1")
-        hashed_password = c.fetchone()[0]
-        
-        if pwd_context.verify(password, hashed_password):
-            self.set_secure_cookie("logged_in", "admin")
-            self.write("OK")
-        else:
-            self.write("ERROR")      
+        self.render("admin.htm.template")
 
 class LogoutHandler(AuthenticatedRequestHandler):
     
@@ -240,14 +226,34 @@ class LogoutHandler(AuthenticatedRequestHandler):
         self.clear_all_cookies()
         self.redirect("/")
 
-class AdminHandler(AuthenticatedRequestHandler):
+class PasswordHandler(AuthenticatedRequestHandler):
     
     @tornado.web.authenticated
-    def get(self):
-        self.render("admin.htm.template")
-    
-class AjaxAddHandler(AuthenticatedRequestHandler):
+    def post(self):
+        current_password = self.get_argument('current-password', '')
+        new_password = self.get_argument('new-password', '')
+        confirm_new_password = self.get_argument('confirm-new-password', '')
+        
+        if current_password:
+            c = db.query("SELECT password FROM admin WHERE oid=1")
+            hashed_password = c.fetchone()[0]
+            if not pwd_context.verify(current_password, hashed_password):
+                self.write("Current password is incorrect.")
+                return
+        
+        if new_password:
+            if new_password == confirm_new_password:
+                password = pwd_context.encrypt(new_password)
+                db.query(("INSERT OR REPLACE INTO admin (oid, password) "
+                            "VALUES (1, ?)"), [password])
+                self.write("OK");
+            else:
+                self.write("Passwords did not match. Please re-enter.")
+        else:
+            self.write("You must set a password, else anyone can delete all work!")
 
+class AjaxAddHandler(AuthenticatedRequestHandler):
+    
     @tornado.web.authenticated
     def post(self):
         users = Users()
@@ -263,7 +269,7 @@ class AjaxAddHandler(AuthenticatedRequestHandler):
         elif not valid_fullname.match(fullname):
             self.write(jtable_reply(False, "Full Name must just be letters with a single space separating the names"))
             return
-
+        
         if not username:
             username = fullname_to_username(fullname)
             if not username:
@@ -304,7 +310,7 @@ class AjaxListHandler(AuthenticatedRequestHandler):
         sortway = None
         if sorting:
             sortby, sortway = sorting.split()
-            
+        
         records = users.get_students(sortby, sortway)
         if records:
             self.write(jtable_reply(True, records))
@@ -320,7 +326,7 @@ class AjaxDeleteHandler(AuthenticatedRequestHandler):
         if not users.is_student(username):
             self.write(jtable_reply(True))
             return
-
+        
         delete_site = remove_site(username)
         if delete_site != 0:
             self.write(jtable_reply(
@@ -346,17 +352,17 @@ class AjaxUpdateHandler(AuthenticatedRequestHandler):
         if not users.is_student(username):
             self.write(jtable_reply(False, "This user does not exist - refresh the page and try again."))
             return
-
+        
         if not fullname:
             self.write(jtable_reply(False, "You must specify the Full Name of this student."))
             return
         elif not valid_fullname.match(fullname):
             self.write(jtable_reply(False, "Full Name must just be letters with a single space separating the names"))
             return
-            
+        
         if not password:
             password = create_password()
-
+        
         update_site_ret = update_site(username, password)
         if update_site_ret != 0:
             self.write(jtable_reply(
@@ -373,33 +379,27 @@ class AjaxUpdateHandler(AuthenticatedRequestHandler):
             'password': password,
             'isindexed': indexed
         }))
-        
-class PasswordHandler(AuthenticatedRequestHandler):
 
-    @tornado.web.authenticated
-    def post(self):
-        current_password = self.get_argument('current-password', '')
-        new_password = self.get_argument('new-password', '')
-        confirm_new_password = self.get_argument('confirm-new-password', '')
-        
-        if current_password:
-            c = db.query("SELECT password FROM admin WHERE oid=1")
-            hashed_password = c.fetchone()[0]
-            if not pwd_context.verify(current_password, hashed_password):
-                self.write("Current password is incorrect.")
-                return
-        
-        if new_password:
-            if new_password == confirm_new_password:
-                password = pwd_context.encrypt(new_password)
-                db.query(("INSERT OR REPLACE INTO admin (oid, password) "
-                            "VALUES (1, ?)"), [password])
-                self.write("OK");
-            else:
-                self.write("Passwords did not match. Please re-enter.")
-        else:
-            self.write("You must set a password, else anyone can delete all work!")
+class LoginHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.render("login.htm.template")
+        return
     
+    def post(self):
+        password = self.get_argument('password', '')
+        if not password:
+            self.write("ERROR")
+            return
+        
+        c = db.query("SELECT password FROM admin WHERE oid=1")
+        hashed_password = c.fetchone()[0]
+        
+        if pwd_context.verify(password, hashed_password):
+            self.set_secure_cookie("logged_in", "admin")
+            self.write("OK")
+        else:
+            self.write("ERROR")
+
 class IndexHandler(tornado.web.RequestHandler):
     def get(self, path):
         if path:
@@ -409,7 +409,7 @@ class IndexHandler(tornado.web.RequestHandler):
         students = users.get_indexed_students()
         
         self.render("index.htm.template", students=students)
-        
+
 application = tornado.web.Application([
     (r"/admin.htm", AdminHandler),
     (r"/logout", LogoutHandler),
