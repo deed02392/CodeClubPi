@@ -20,12 +20,15 @@ $(document).ready(function () {
                 title: 'Username',
                 width: '20%',
                 create: true,
+                placeholder: "Optional",
                 key: true,
                 sorting: false
             },
             password: {
                 title: 'Password',
                 width: '20%',
+                type: 'password',
+                placeholder: "Optional",
                 sorting: false,
                 display: function(data) {
                     var data = data.record.password;
