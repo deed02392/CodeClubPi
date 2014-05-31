@@ -245,6 +245,54 @@ class AdminHandler(AuthenticatedRequestHandler):
     @tornado.web.authenticated
     def get(self):
         self.render("admin.htm.template")
+    
+class AjaxAddHandler(AuthenticatedRequestHandler):
+
+    @tornado.web.authenticated
+    def post(self):
+        users = Users()
+        fullname = escape.xhtml_escape(self.get_argument('fullname', ''))
+        username = escape.xhtml_escape(self.get_argument('username', ''))
+        password = self.get_argument('password', '')
+        url = escape.xhtml_escape(self.get_argument('url', ''))
+        indexed = 1 if self.get_argument('isindexed', '') else 0
+        
+        if not fullname:
+            self.write(jtable_reply(False, "Full Name must be specified"))
+            return
+        elif not valid_fullname.match(fullname):
+            self.write(jtable_reply(False, "Full Name must just be letters with a single space separating the names"))
+            return
+
+        if not username:
+            username = fullname_to_username(fullname)
+            if not username:
+                self.write(jtable_reply(False, "Please specify a username, I couldn't create one from %s" % fullname))
+                return
+        if not password:
+            password = create_password()
+        if not url:
+            url = username
+        
+        if not users.is_available(username):
+            self.write(jtable_reply(False, "This username already exists (%s). Specify the username if two people in your class have the same full name." % username))
+            return
+        
+        add_site = create_site(fullname, username, password, url, indexed)
+        if add_site != 0:
+            self.write(jtable_reply(False, "%s %s %s %s %r\n" % (fullname, username, password, url, indexed)))
+            self.write(jtable_reply(False, "stdout: %s\nstderr: %s" % (add_site[0], add_site[1])))
+            return
+        
+        url = 'http://' + url + '.code.club';
+        users.add_user(fullname, username, password, url, indexed)
+        self.write(jtable_reply(True, {
+            'fullname': fullname,
+            'username': username,
+            'password': password,
+            'url': url,
+            'isindexed': indexed,
+        }))
 
 class AjaxListHandler(AuthenticatedRequestHandler):
     
@@ -299,24 +347,32 @@ class AjaxUpdateHandler(AuthenticatedRequestHandler):
             self.write(jtable_reply(False, "This user does not exist - refresh the page and try again."))
             return
 
-        if username and password:
-            update_site_ret = update_site(username, password)
-            if update_site_ret != 0:
-                self.write(jtable_reply(
-                    False,
-                    ("System error deleting user (%s)."
-                                "stdout: %s"
-                                "stderr: %s") % (username, update_site_ret[0], update_site_ret[1])
-                ))
-                return
+        if not fullname:
+            self.write(jtable_reply(False, "You must specify the Full Name of this student."))
+            return
+        elif not valid_fullname.match(fullname):
+            self.write(jtable_reply(False, "Full Name must just be letters with a single space separating the names"))
+            return
             
-            users.update_user(fullname, username, password, indexed)
-            self.write(jtable_reply(True, {
-                'fullname': fullname,
-                'password': password,
-                'isindexed': indexed
-            }))
+        if not password:
+            password = create_password()
 
+        update_site_ret = update_site(username, password)
+        if update_site_ret != 0:
+            self.write(jtable_reply(
+                False,
+                ("System error deleting user (%s)."
+                            "stdout: %s"
+                            "stderr: %s") % (username, update_site_ret[0], update_site_ret[1])
+            ))
+            return
+        
+        users.update_user(fullname, username, password, indexed)
+        self.write(jtable_reply(True, {
+            'fullname': fullname,
+            'password': password,
+            'isindexed': indexed
+        }))
         
 class PasswordHandler(AuthenticatedRequestHandler):
 
@@ -343,55 +399,7 @@ class PasswordHandler(AuthenticatedRequestHandler):
                 self.write("Passwords did not match. Please re-enter.")
         else:
             self.write("You must set a password, else anyone can delete all work!")
-        
-class AjaxAddHandler(AuthenticatedRequestHandler):
-
-    @tornado.web.authenticated
-    def post(self):
-        users = Users()
-        fullname = escape.xhtml_escape(self.get_argument('fullname', ''))
-        username = escape.xhtml_escape(self.get_argument('username', ''))
-        password = self.get_argument('password', '')
-        url = escape.xhtml_escape(self.get_argument('url', ''))
-        indexed = 1 if self.get_argument('isindexed', '') else 0
-        
-        if not fullname:
-            self.write(jtable_reply(False, "Full Name must be specified"))
-            return
-        elif not valid_fullname.match(fullname):
-            self.write(jtable_reply(False, "Full Name must just be letters with a single space separating the names"))
-            return
-
-        if not username:
-            username = fullname_to_username(fullname)
-            if not username:
-                self.write(jtable_reply(False, "Please specify a username, I couldn't create one from %s" % fullname))
-                return
-        if not password:
-            password = create_password()
-        if not url:
-            url = username
-        
-        if not users.is_available(username):
-            self.write(jtable_reply(False, "This username already exists (%s). Specify the username if two people in your class have the same full name." % username))
-            return
-        
-        add_site = create_site(fullname, username, password, url, indexed)
-        if add_site != 0:
-            self.write(jtable_reply(False, "%s %s %s %s %r\n" % (fullname, username, password, url, indexed)))
-            self.write(jtable_reply(False, "stdout: %s\nstderr: %s" % (add_site[0], add_site[1])))
-            return
-        
-        url = 'http://' + url + '.code.club';
-        users.add_user(fullname, username, password, url, indexed)
-        self.write(jtable_reply(True, {
-            'fullname': fullname,
-            'username': username,
-            'password': password,
-            'url': url,
-            'isindexed': indexed,
-        }))
-
+    
 class IndexHandler(tornado.web.RequestHandler):
     def get(self, path):
         if path:
