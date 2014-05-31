@@ -11,7 +11,7 @@
 #                    adding system/sftp user accounts and nginx vhosts.
 ### END INIT INFO
 
-DIR=/home/pi/nginx-vhost
+DIR=/home/pi/CodeClubPi
 DAEMON=$DIR/start_admin.py
 DAEMON_NAME=start_admin
  

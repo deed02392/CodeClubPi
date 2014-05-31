@@ -3,7 +3,6 @@ import os
 import sys
 import signal
 import re
-import struct
 import pwd
 import binascii
 import tornado.web
@@ -22,9 +21,12 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 templates_dir = "templates"
 static_dir = "static"
 create_site_file = "scripts/create_site.sh"
+update_site_file = "scripts/update_site.sh"
 remove_site_file = "scripts/remove_site.sh"
 db_file = "lib/codeclub.db3"
 pwd_context = CryptContext(schemes=["sha256_crypt"],default="sha256_crypt")
+valid_fullname = re.compile(r"^[A-Za-z]+(?: ?[A-Za-z]+)*$")
+valid_username = re.compile(r"^[a-z]+$")
 
 def on_exit(sig, func=None):
     tornado.ioloop.IOLoop.instance().add_callback(shutdown)
@@ -45,74 +47,81 @@ def shutdown():
     stop_loop()
     del db
 
-def jtable_reply(ok, data):
-    dict = {}
+def jtable_reply(ok, data=None):
+    return_dict = {}
     if ok:
-        dict['Result'] = "OK"
-        dict['Record'] = data
+        return_dict['Result'] = "OK"
+        if type(data) is list:
+            return_dict['Records'] = data
+        elif type(data) is dict:
+            return_dict['Record'] = data
     else:
-        dict['Result'] = "ERROR"
-        dict['Message'] = data
-    return json.dumps(dict)
+        return_dict['Result'] = "ERROR"
+        if data:
+            return_dict['Message'] = data
+    return json.dumps(return_dict)
 
-class Utils:
-    valid_fullname = re.compile(r"^[A-Za-z]+(?: ?[A-Za-z]+)*$")
-    valid_username = re.compile(r"^[a-z]+$")
-    
-    @staticmethod
-    def string_cap(s, l):
-        return s if len(s)<=l else s[0:l-3]+'...'
-    
-    @staticmethod
-    def fullname_to_username(fullname):
-        fullname = fullname.lower()
-        fullname = ''.join(fullname.split()) # Kill whitespace
-        fullname = Utils.string_cap(fullname, 30)
-        if Utils.valid_username.match(fullname):
-            return fullname
+def string_cap(s, l):
+    return s if len(s)<=l else s[0:l-3]+'...'
+
+def fullname_to_username(fullname):
+    fullname = fullname.lower()
+    fullname = ''.join(fullname.split()) # Kill whitespace
+    fullname = string_cap(fullname, 30)
+    if valid_username.match(fullname):
+        return fullname
+    else:
+        return False
+
+def create_password():
+    zoo_animals = ['elephant', 'lion', 'tiger', 'giraffe', 'penguin', 'gorillas', 'sharks',
+        'panda', 'meerkat', 'crocodile', 'bear', 'otter', 'wolf', 'cheetah', 'snake', 'zebra',
+        'frog', 'dolphin']
+    fruits = ['strawberry', 'mango', 'watermelon', 'banana', 'orange', 'apple', 'grape',
+        'peach', 'cherry', 'raspberry', 'kiwi', 'blueberry', 'lemon', 'pear', 'plum',
+        'blackberry', 'lime']
+    rand = random.SystemRandom()
+    number = rand.randint(1, 1000)
+    return rand.choice(fruits) + rand.choice(zoo_animals) + str(number)
+
+def create_site(fullname, username, password, url, indexed):
+    create_site_path = os.path.join(current_dir, create_site_file)
+    create_lock = lockfile.FileLock(create_site_path)
+    with create_lock:
+        proc = subprocess.Popen([create_site_path, fullname, username, password, url], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdoutdata, stderrdata = proc.communicate()
+        if proc.returncode == 0:
+            return 0
         else:
-            return False
-    
-    @staticmethod
-    def create_password():
-        zoo_animals = ['elephant', 'lion', 'tiger', 'giraffe', 'penguin', 'gorillas', 'sharks',
-            'panda', 'meerkat', 'crocodile', 'bear', 'otter', 'wolf', 'cheetah', 'snake', 'zebra',
-            'frog', 'dolphin']
-        fruits = ['strawberry', 'mango', 'watermelon', 'banana', 'orange', 'apple', 'grape',
-            'peach', 'cherry', 'raspberry', 'kiwi', 'blueberry', 'lemon', 'pear', 'plum',
-            'blackberry', 'lime']
-        number = ord(struct.unpack("<c", os.urandom(1))[0])
-        return random.choice(fruits) + random.choice(zoo_animals) + str(number)
-    
-    @staticmethod
-    def create_site(fullname, username, password, url, indexed):
-        create_site_path = os.path.join(current_dir, create_site_file)
-        create_lock = lockfile.FileLock(create_site_path)
-        with create_lock:
-            proc = subprocess.Popen([create_site_path, fullname, username, password, url], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdoutdata, stderrdata = proc.communicate()
-            if proc.returncode == 0:
-                return 0
-            else:
-                return stdoutdata, stderrdata
+            return stdoutdata, stderrdata
 
-    @staticmethod
-    def remove_site(username):
-        remove_site_path = os.path.join(current_dir, remove_site_file)
-        remove_lock = lockfile.FileLock(remove_site_path)
-        with remove_lock:
-            proc = subprocess.Popen([remove_site_path, username], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdoutdata, stderrdata = proc.communicate()
-            if proc.returncode == 0:
-                return 0
-            else:
-                return stdoutdata, stderrdata
-    @staticmethod
-    def hash_password(password, salt=None):
-        if not salt:
-            salt = binascii.hexlify(os.urandom(32))
-        
-        return scrypt.encrypt(salt, password, hash_for_secs), salt
+def update_site(username, password):
+    update_site_path = os.path.join(current_dir, update_site_file)
+    update_lock = lockfile.FileLock(update_site_path)
+    with update_lock:
+        proc = subprocess.Popen([update_site_path, username, password], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdoutdata, stderrdata = proc.communicate()
+        if proc.returncode == 0:
+            return 0
+        else:
+            return stdoutdata, stderrdata
+            
+def remove_site(username):
+    remove_site_path = os.path.join(current_dir, remove_site_file)
+    remove_lock = lockfile.FileLock(remove_site_path)
+    with remove_lock:
+        proc = subprocess.Popen([remove_site_path, username], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdoutdata, stderrdata = proc.communicate()
+        if proc.returncode == 0:
+            return 0
+        else:
+            return stdoutdata, stderrdata
+
+def hash_password(password, salt=None):
+    if not salt:
+        salt = binascii.hexlify(os.urandom(32))
+    
+    return scrypt.encrypt(salt, password, hash_for_secs), salt
 
 class Users:
     def add_user(self, fullname, username, password, url, indexed):
@@ -142,7 +151,10 @@ class Users:
             return False
         else:
             return True
-
+    
+    def update_user(self, fullname, username, password, indexed):
+        db.query("UPDATE students SET fullname=?, password=?, indexed=? WHERE username=?", [fullname, password, indexed, username])
+    
     def remove_user(self, username):
         db.query("DELETE FROM students WHERE username=?", [username])
     
@@ -195,6 +207,12 @@ class Users:
             })
         return users
 
+class AuthenticatedRequestHandler(tornado.web.RequestHandler):
+    def __init__(self, *args, **kwargs):
+        super(AuthenticatedRequestHandler, self).__init__(*args, **kwargs)
+    def get_current_user(self):
+        return self.get_secure_cookie("logged_in")
+    
 class LoginHandler(tornado.web.RequestHandler):
     def get(self):
         self.render("login.htm.template")
@@ -215,26 +233,20 @@ class LoginHandler(tornado.web.RequestHandler):
         else:
             self.write("ERROR")      
 
-class LogoutHandler(tornado.web.RequestHandler):
-    def get_current_user(self):
-        return self.get_secure_cookie("logged_in")
+class LogoutHandler(AuthenticatedRequestHandler):
     
     @tornado.web.authenticated
     def get(self):
         self.clear_all_cookies()
         self.redirect("/")
 
-class AdminHandler(tornado.web.RequestHandler):
-    def get_current_user(self):
-        return self.get_secure_cookie("logged_in")
+class AdminHandler(AuthenticatedRequestHandler):
     
     @tornado.web.authenticated
     def get(self):
         self.render("admin.htm.template")
 
-class AjaxListHandler(tornado.web.RequestHandler):
-    def get_current_user(self):
-        return self.get_secure_cookie("logged_in")
+class AjaxListHandler(AuthenticatedRequestHandler):
     
     @tornado.web.authenticated
     def post(self):
@@ -247,42 +259,66 @@ class AjaxListHandler(tornado.web.RequestHandler):
             
         records = users.get_students(sortby, sortway)
         if records:
-            self.write(json.dumps({
-                "Result":"OK",
-                "Records": records
-            }))
+            self.write(jtable_reply(True, records))
         else:
-            self.write(json.dumps({
-                "Result":"ERROR"
-            }))
+            self.write(jtable_reply(False))
 
-class AjaxDeleteHandler(tornado.web.RequestHandler):
-    def get_current_user(self):
-        return self.get_secure_cookie("logged_in")
+class AjaxDeleteHandler(AuthenticatedRequestHandler):
     
     @tornado.web.authenticated
     def post(self):
         users = Users()
         username = escape.xhtml_escape(self.get_argument('username'))
         if not users.is_student(username):
-            self.write(json.dumps({"Result": "OK"}))
+            self.write(jtable_reply(True))
             return
 
-        delete_site = Utils.remove_site(username)
+        delete_site = remove_site(username)
         if delete_site != 0:
-            self.write(json.dumps({
-                "Result": "ERROR",
-                "Message": ("System error deleting user (%s)."
+            self.write(jtable_reply(
+                False,
+                ("System error deleting user (%s)."
                             "stdout: %s"
                             "stderr: %s") % (username, delete_site[0], delete_site[1])
-            }))
+            ))
             return
         users.remove_user(username)
-        self.write(json.dumps({"Result": "OK"}))
+        self.write(jtable_reply(True))
 
-class PasswordHandler(tornado.web.RequestHandler):
-    def get_current_user(self):
-        return self.get_secure_cookie("logged_in")
+class AjaxUpdateHandler(AuthenticatedRequestHandler):
+    
+    @tornado.web.authenticated
+    def post(self):
+        users = Users()
+        fullname = escape.xhtml_escape(self.get_argument('fullname'))
+        username = escape.xhtml_escape(self.get_argument('username'))
+        password = escape.xhtml_escape(self.get_argument('password'))
+        indexed = 1 if self.get_argument('isindexed', '') else 0
+        
+        if not users.is_student(username):
+            self.write(jtable_reply(False, "This user does not exist - refresh the page and try again."))
+            return
+
+        if username and password:
+            update_site_ret = update_site(username, password)
+            if update_site_ret != 0:
+                self.write(jtable_reply(
+                    False,
+                    ("System error deleting user (%s)."
+                                "stdout: %s"
+                                "stderr: %s") % (username, update_site_ret[0], update_site_ret[1])
+                ))
+                return
+            
+            users.update_user(fullname, username, password, indexed)
+            self.write(jtable_reply(True, {
+                'fullname': fullname,
+                'password': password,
+                'isindexed': indexed
+            }))
+
+        
+class PasswordHandler(AuthenticatedRequestHandler):
 
     @tornado.web.authenticated
     def post(self):
@@ -308,9 +344,7 @@ class PasswordHandler(tornado.web.RequestHandler):
         else:
             self.write("You must set a password, else anyone can delete all work!")
         
-class AjaxAddHandler(tornado.web.RequestHandler):
-    def get_current_user(self):
-        return self.get_secure_cookie("logged_in")
+class AjaxAddHandler(AuthenticatedRequestHandler):
 
     @tornado.web.authenticated
     def post(self):
@@ -324,17 +358,17 @@ class AjaxAddHandler(tornado.web.RequestHandler):
         if not fullname:
             self.write(jtable_reply(False, "Full Name must be specified"))
             return
-        elif not Utils.valid_fullname.match(fullname):
+        elif not valid_fullname.match(fullname):
             self.write(jtable_reply(False, "Full Name must just be letters with a single space separating the names"))
             return
 
         if not username:
-            username = Utils.fullname_to_username(fullname)
+            username = fullname_to_username(fullname)
             if not username:
                 self.write(jtable_reply(False, "Please specify a username, I couldn't create one from %s" % fullname))
                 return
         if not password:
-            password = Utils.create_password()
+            password = create_password()
         if not url:
             url = username
         
@@ -342,10 +376,10 @@ class AjaxAddHandler(tornado.web.RequestHandler):
             self.write(jtable_reply(False, "This username already exists (%s). Specify the username if two people in your class have the same full name." % username))
             return
         
-        create_site = Utils.create_site(fullname, username, password, url, indexed)
-        if create_site != 0:
+        add_site = create_site(fullname, username, password, url, indexed)
+        if add_site != 0:
             self.write(jtable_reply(False, "%s %s %s %s %r\n" % (fullname, username, password, url, indexed)))
-            self.write(jtable_reply(False, "stdout: %s\nstderr: %s" % (create_site[0], create_site[1])))
+            self.write(jtable_reply(False, "stdout: %s\nstderr: %s" % (add_site[0], add_site[1])))
             return
         
         url = 'http://' + url + '.code.club';
@@ -370,12 +404,13 @@ class IndexHandler(tornado.web.RequestHandler):
         
 application = tornado.web.Application([
     (r"/admin.htm", AdminHandler),
+    (r"/logout", LogoutHandler),
     (r"/pass", PasswordHandler),
     (r"/ajax/students-add", AjaxAddHandler),
     (r"/ajax/students-list", AjaxListHandler),
+    (r"/ajax/students-update", AjaxUpdateHandler),
     (r"/ajax/students-delete", AjaxDeleteHandler),
     (r"/login.htm", LoginHandler),
-    (r"/logout", LogoutHandler),
     (r"/(.*)", IndexHandler),
 ],
 debug=True,
