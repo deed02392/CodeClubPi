@@ -226,6 +226,24 @@ class LogoutHandler(AuthenticatedRequestHandler):
         self.clear_all_cookies()
         self.redirect("/")
 
+class FirstPasswordHandler(tornado.web.RequestHandler):
+    def post(self):
+        c = db.query("SELECT password FROM admin WHERE oid=1")
+        unset_password = True if c.fetchone() is None else False
+        new_password = self.get_argument('new-password', '')
+        confirm_new_password = self.get_argument('confirm-new-password', '')
+
+        if unset_password and new_password:
+            if new_password == confirm_new_password:
+                password = pwd_context.encrypt(new_password)
+                db.query(("INSERT OR REPLACE INTO admin (oid, password) "
+                            "VALUES (1, ?)"), [password])
+                self.write("OK");
+            else:
+                self.write("Passwords did not match. Please re-enter.")
+        else:
+            self.write("You must set a password, else anyone can delete all work!")
+            
 class PasswordHandler(AuthenticatedRequestHandler):
     
     @tornado.web.authenticated
@@ -234,12 +252,11 @@ class PasswordHandler(AuthenticatedRequestHandler):
         new_password = self.get_argument('new-password', '')
         confirm_new_password = self.get_argument('confirm-new-password', '')
         
-        if current_password:
-            c = db.query("SELECT password FROM admin WHERE oid=1")
-            hashed_password = c.fetchone()[0]
-            if not pwd_context.verify(current_password, hashed_password):
-                self.write("Current password is incorrect.")
-                return
+        c = db.query("SELECT password FROM admin WHERE oid=1")
+        hashed_password = c.fetchone()[0]
+        if not pwd_context.verify(current_password, hashed_password):
+            self.write("Current password is incorrect.")
+            return
         
         if new_password:
             if new_password == confirm_new_password:
@@ -382,7 +399,10 @@ class AjaxUpdateHandler(AuthenticatedRequestHandler):
 
 class LoginHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render("login.htm.template")
+        c = db.query("SELECT password FROM admin WHERE oid=1")
+        hashed_password = c.fetchone()
+        unset_password = True if hashed_password is None else False
+        self.render("login.htm.template", unset_password=unset_password)
         return
     
     def post(self):
@@ -414,6 +434,7 @@ application = tornado.web.Application([
     (r"/admin.htm", AdminHandler),
     (r"/logout", LogoutHandler),
     (r"/pass", PasswordHandler),
+    (r"/firstpass", FirstPasswordHandler),
     (r"/ajax/students-add", AjaxAddHandler),
     (r"/ajax/students-list", AjaxListHandler),
     (r"/ajax/students-update", AjaxUpdateHandler),
