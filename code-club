@@ -12,10 +12,10 @@
 ### END INIT INFO
 
 DIR=/home/pi/CodeClubPi
-DAEMON=$DIR/start_admin.py
-DAEMON_NAME=start_admin
+DAEMON_NAME=code-club
+DAEMON=$DIR/$DAEMON_NAME.py
  
-# root is necessary to provide user adding and removing permissions
+# root is necessary for user account changes and powering off server
 DAEMON_USER=root
  
 # The process ID of the script when it runs is stored here:
