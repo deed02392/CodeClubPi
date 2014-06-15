@@ -73,11 +73,32 @@ a:hover {
     list-style-type: circle;
 }   
 
+#footer {
+    margin: 1em 0 1em 0;
+    padding: 0 1em;
+}
+
 #footer span {
-    padding: 1em;
     font-size: 1.0em;
     color: #666;
     font-family: "Helvetica",Helvetica,Arial,sans-serif;
+}
+
+#footer #poweroff {
+    float: right;
+}
+
+#footer #poweroff a {
+    color: #bf4040;
+    text-decoration: none;
+    font-size: 1em;
+    font-weight: bold;
+    font-family: "Helvetica",Helvetica,Arial,sans-serif;
+}
+
+#footer #poweroff a:hover {
+    color: #7c1515;
+    text-decoration: none;
 }
 
 #students-jtable {

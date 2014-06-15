@@ -28,6 +28,7 @@
     </div>
     <div id="footer">
         <span>Created by George Hafiz &lt;<a href="mailto:georgehafiz@gmail.com">georgehafiz@gmail.com</a>&gt;</span>
+        <span id="poweroff"><a href="#">Power off</a></span>
     </div>
     
     <div id="change-password-dialog-form" title="Change password">
@@ -41,6 +42,9 @@
             <label for="confirm-new-password">Confirm New Password</label>
             <input type="password" name="confirm-new-password" id="confirm-new-password" class="text ui-widget-content ui-corner-all">
         </form>
+    </div>
+    <div id="poweroff-confirm" title="Shutdown the Pi?">
+        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>You will need to cycle power to the Pi to start up again.</p>
     </div>
 </body>
 </html>

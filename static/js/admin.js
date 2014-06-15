@@ -123,7 +123,33 @@ $(document).ready(function () {
     });
     
     $('#change-password').click(function() {
-        $("#change-password-dialog-form").dialog("open");
+        $('#change-password-dialog-form').dialog('open');
+        return false;
+    });
+    
+    $('#poweroff-confirm').dialog({
+        autoOpen: false,
+        modal: true,
+        buttons: {
+            'Power off': {
+                text: "Power off",
+                id: "dialog-poweroff-btn",
+                click: function() {
+                    $button = $("#dialog-poweroff-btn").find("span");
+                    $button.text("Powering off...");
+
+                    $.get('/poweroff');
+                }
+            },
+            'Cancel': function() {
+              $(this).dialog('close');
+            }
+        }
+    });
+    
+    $('#poweroff').click(function() {
+        $('#poweroff-confirm').dialog('open');
+        return false;
     });
 
 });

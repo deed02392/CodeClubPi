@@ -430,6 +430,12 @@ class IndexHandler(tornado.web.RequestHandler):
         
         self.render("index.htm.template", students=students)
 
+class PoweroffHandler(AuthenticatedRequestHandler):
+    
+    @tornado.web.authenticated
+    def get(self):
+        os.system("poweroff")
+
 application = tornado.web.Application([
     (r"/admin.htm", AdminHandler),
     (r"/logout", LogoutHandler),
@@ -439,6 +445,7 @@ application = tornado.web.Application([
     (r"/ajax/students-list", AjaxListHandler),
     (r"/ajax/students-update", AjaxUpdateHandler),
     (r"/ajax/students-delete", AjaxDeleteHandler),
+    (r"/poweroff", PoweroffHandler),
     (r"/login.htm", LoginHandler),
     (r"/(.*)", IndexHandler),
 ],
