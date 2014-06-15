@@ -1,13 +1,34 @@
-Based on:
+Description
+-----------
 
-Nginx and PHP-FPM
-http://www.sebdangerfield.me.uk/2012/05/nginx-and-php-fpm-bash-script-for-creating-new-vhosts-under-separate-fpm-pools/
+CodeClubPi is a set of scripts and software that enables anyone to turn a Raspberry Pi into a complete web server solution for students practising HTML/CSS/JS in a class room environment.
 
-Edited for Meon Jr School Code Club, and Code Club volunteers world-wide.
+It enables:
 
-Sorry, PHP support is removed. Bare in mind security implications of setting this up - you need chroot at a minimum.
+* Managing user/student accounts by creating locked down system accounts thus providing SFTP access
+* Adjusting `nginx` configuration automatically so that every student gets their own vhost (e.g. [http://georgehafiz.code.club](http://georgehafiz.code.club))
 
 Usage
 -----
 
-`sudo python start_admin.py` - the Python web server must be run as root to enable permissions necessary for user creation
+* Prepare the system environment (detailed instructions needed)
+* Install the provided init-script (`code-club`)
+* Reboot or start with `/etc/init.d/code-club start`
+
+Note that the server will run as `root`. This is unavoidable due to the need to manipulate user accounts, however great care has been put into ensuring the privileged scripts are very secure.
+
+
+Thanks
+------
+
+The below contributed to the purchase of the hardware needed to support this project:
+
+* Daniel J Woolridge
+* Emma Longhurst-Gent
+* Christopher Copper
+* Adnan Shammout
+* Cath Longhurst
+
+Nginx and PHP-FPM
+http://www.sebdangerfield.me.uk/2012/05/nginx-and-php-fpm-bash-script-for-creating-new-vhosts-under-separate-fpm-pools/
+  for helpful reference on generating users and templates etc.. for new vhosts using bash
