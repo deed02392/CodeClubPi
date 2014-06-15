@@ -1,5 +1,4 @@
-Description
------------
+## Description ##
 
 CodeClubPi is a set of scripts and software that enables anyone to turn a Raspberry Pi into a complete web server solution for students practising HTML/CSS/JS in a class room environment.
 
@@ -8,11 +7,24 @@ It enables:
 * Managing user/student accounts by creating locked down system accounts thus providing SFTP access
 * Adjusting `nginx` configuration automatically so that every student gets their own vhost (e.g. [http://georgehafiz.code.club](http://georgehafiz.code.club))
 
-Usage
------
+## Usage ##
 
-* Prepare the system environment (detailed instructions needed)
-* Install the provided init-script (`code-club`)
+### Software Requirements ###
+
+* python-dev
+* python-pip
+* python-tornado
+* pip install lockfile
+* pip install passlib
+* sqlite3
+
+### Environmental Requirements ###
+
+* `/etc/nginx` needs special configuration (TBC)
+* `/etc/ssh` needs special configuration (TBC)
+* Install the provided init-script (`code-club`) with `insserv`
+
+
 * Reboot or start with `/etc/init.d/code-club start`
 
 Note that the server will run as `root`. This is unavoidable due to the need to manipulate user accounts, however great care has been put into ensuring the privileged scripts are very secure.
