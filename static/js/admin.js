@@ -1,61 +1,61 @@
 $(document).ready(function () {
-    $('#students-jtable').jtable({
+    $("#students-jtable").jtable({
         title: "&nbsp;",
         jqueryuiTheme: true,
         sorting: true,
-        defaultSorting: 'fullname ASC',
+        defaultSorting: "fullname ASC",
         actions: {
-            listAction: '/ajax/students-list',
-            createAction: '/ajax/students-add',
-            updateAction: '/ajax/students-update',
-            deleteAction: '/ajax/students-delete'
+            listAction: "/ajax/students-list",
+            createAction: "/ajax/students-add",
+            updateAction: "/ajax/students-update",
+            deleteAction: "/ajax/students-delete"
         },
         fields: {
             fullname: {
-                title: 'Full Name',
-                width: '30%',
+                title: "Full Name",
+                width: "30%",
                 sorting: true
             },
             username: {
-                title: 'Username',
-                width: '20%',
+                title: "Username",
+                width: "20%",
                 create: true,
                 placeholder: "Optional",
                 key: true,
                 sorting: false
             },
             password: {
-                title: 'Password',
-                width: '20%',
-                type: 'password',
+                title: "Password",
+                width: "20%",
+                type: "password",
                 placeholder: "Optional",
                 sorting: false,
                 display: function(data) {
                     var data = data.record.password;
-                    return '<span class="hide-password">' + data + '</span>';
+                    return "<span class='hide-password'>" + data + "</span>";
                 }
             },
             url: {
-                title: 'URL',
-                width: '20%',
+                title: "URL",
+                width: "20%",
                 sorting: false,
                 create: false,
                 edit: false,
                 display: function(data) {
                     var data = data.record.url;
-                    return '<a href="' + data + '">' + data + '</a>';
+                    return "<a href='" + data + "'>" + data + "</a>";
                 }
             },
             isindexed: {
-                title: 'Show?',
-                width: '5%',
-                type: 'checkbox',
-                values: { '0': 'No', '1': 'Yes' },
-                defaultValue: '1',
+                title: "Show?",
+                width: "5%",
+                type: "checkbox",
+                values: { "0": "No", "1": "Yes" },
+                defaultValue: "1",
                 sorting: false
             },
         }
-    }).jtable('load');
+    }).jtable("load");
     
     function updateTips(t) {
         $tips
@@ -79,14 +79,14 @@ $(document).ready(function () {
         }
     });
     
-    $('#change-password-dialog-form').dialog({
+    $("#change-password-dialog-form").dialog({
         autoOpen: false,
         modal: true,
         buttons: {
             "Cancel": {
                 text: "Cancel",
                 click: function() {
-                    $(this).dialog('close');
+                    $(this).dialog("close");
                 }
             },
             "Change": {
@@ -122,33 +122,33 @@ $(document).ready(function () {
         },
     });
     
-    $('#change-password').click(function() {
-        $('#change-password-dialog-form').dialog('open');
+    $("#change-password").click(function() {
+        $("#change-password-dialog-form").dialog("open");
         return false;
     });
     
-    $('#poweroff-confirm').dialog({
+    $("#poweroff-confirm").dialog({
         autoOpen: false,
         modal: true,
         buttons: {
-            'Power off': {
+            "Power off": {
                 text: "Power off",
                 id: "dialog-poweroff-btn",
                 click: function() {
                     $button = $("#dialog-poweroff-btn").find("span");
                     $button.text("Powering off...");
 
-                    $.get('/poweroff');
+                    $.get("/poweroff");
                 }
             },
-            'Cancel': function() {
-              $(this).dialog('close');
+            "Cancel": function() {
+              $(this).dialog("close");
             }
         }
     });
     
-    $('#poweroff').click(function() {
-        $('#poweroff-confirm').dialog('open');
+    $("#poweroff").click(function() {
+        $("#poweroff-confirm").dialog("open");
         return false;
     });
 
